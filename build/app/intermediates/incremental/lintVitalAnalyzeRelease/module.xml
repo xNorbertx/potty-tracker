@@ -1,0 +1,18 @@
+<lint-module
+    format="1"
+    dir="/home/norb_dot_com/repos/potty-tracker/android/app"
+    name=":app"
+    type="APP"
+    maven="android:app:"
+    agpVersion="8.1.0"
+    buildFolder="/home/norb_dot_com/repos/potty-tracker/build/app"
+    bootClassPath="/home/norb_dot_com/tools/android-sdk/platforms/android-34/android.jar:/home/norb_dot_com/tools/android-sdk/build-tools/33.0.1/core-lambda-stubs.jar"
+    javaSourceLevel="1.8"
+    compileTarget="android-34">
+  <lintOptions
+      abortOnError="true"
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="release"/>
+</lint-module>
