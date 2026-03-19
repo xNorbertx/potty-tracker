@@ -1,0 +1,28 @@
+name: potty_tracker
+description: Baby poop tracker app built with Flutter + Firebase
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.0.0
+  firebase_auth: ^5.0.0
+  cloud_firestore: ^5.0.0
+  intl: ^0.19.0
+  table_calendar: ^3.1.0
+  provider: ^6.1.0
+  uuid: ^4.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  fake_cloud_firestore: ^3.0.0
+  firebase_auth_mocks: ^0.14.0
+
+flutter:
+  uses-material-design: true
