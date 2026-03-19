@@ -37,6 +37,8 @@ class CalendarWidget extends StatelessWidget {
         onPageChanged: onPageChanged,
         calendarFormat: CalendarFormat.month,
         availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+        rowHeight: 52,
+        daysOfWeekHeight: 24,
         calendarStyle: CalendarStyle(
           outsideDaysVisible: false,
           selectedDecoration: const BoxDecoration(
@@ -51,11 +53,8 @@ class CalendarWidget extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: Color(0xFF2E7D32),
           ),
-          markerDecoration: const BoxDecoration(
-            color: Color(0xFF8D6E63),
-            shape: BoxShape.circle,
-          ),
-          markersMaxCount: 3,
+          // Hide default dot markers — we use custom builder below
+          markersMaxCount: 0,
         ),
         headerStyle: const HeaderStyle(
           formatButtonVisible: false,
@@ -68,29 +67,140 @@ class CalendarWidget extends StatelessWidget {
         calendarBuilders: CalendarBuilders(
           markerBuilder: (context, day, events) {
             if (events.isEmpty) return const SizedBox.shrink();
-            return Positioned(
-              bottom: 4,
+
+            final count = events.length;
+            // Show up to 3 poop emojis, then "+N" for more
+            final displayCount = count > 3 ? 3 : count;
+            final overflow = count > 3 ? count - 3 : 0;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 2),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '💩' * (events.length > 3 ? 3 : events.length),
-                    style: const TextStyle(fontSize: 8),
+                    '💩' * displayCount,
+                    style: const TextStyle(fontSize: 7, height: 1),
                   ),
-                  if (events.length > 3)
+                  if (overflow > 0)
                     Text(
-                      '+${events.length - 3}',
+                      '+$overflow',
                       style: const TextStyle(
-                        fontSize: 8,
+                        fontSize: 7,
                         color: Color(0xFF4CAF50),
                         fontWeight: FontWeight.bold,
+                        height: 1,
                       ),
                     ),
                 ],
               ),
             );
           },
+          // Custom day cell builder to stack number + markers cleanly
+          defaultBuilder: (context, day, focusedDay) {
+            return _DayCell(
+              day: day,
+              events: _getEntriesForDay(day),
+              isSelected: false,
+              isToday: false,
+            );
+          },
+          selectedBuilder: (context, day, focusedDay) {
+            return _DayCell(
+              day: day,
+              events: _getEntriesForDay(day),
+              isSelected: true,
+              isToday: false,
+            );
+          },
+          todayBuilder: (context, day, focusedDay) {
+            return _DayCell(
+              day: day,
+              events: _getEntriesForDay(day),
+              isSelected: false,
+              isToday: true,
+            );
+          },
         ),
+      ),
+    );
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  final DateTime day;
+  final List<PoopEntry> events;
+  final bool isSelected;
+  final bool isToday;
+
+  const _DayCell({
+    required this.day,
+    required this.events,
+    required this.isSelected,
+    required this.isToday,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color? bgColor;
+    Color textColor = Colors.black87;
+
+    if (isSelected) {
+      bgColor = const Color(0xFF4CAF50);
+      textColor = Colors.white;
+    } else if (isToday) {
+      bgColor = const Color(0xFF4CAF50).withValues(alpha: 0.2);
+      textColor = const Color(0xFF2E7D32);
+    }
+
+    final count = events.length;
+    final displayCount = count > 3 ? 3 : count;
+    final overflow = count > 3 ? count - 3 : 0;
+
+    return Container(
+      margin: const EdgeInsets.all(2),
+      decoration: bgColor != null
+          ? BoxDecoration(color: bgColor, shape: BoxShape.circle)
+          : null,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '${day.day}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight:
+                  isToday ? FontWeight.bold : FontWeight.normal,
+              color: textColor,
+            ),
+          ),
+          if (count > 0)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '💩' * displayCount,
+                  style: const TextStyle(fontSize: 7, height: 1.1),
+                ),
+                if (overflow > 0)
+                  Text(
+                    '+$overflow',
+                    style: TextStyle(
+                      fontSize: 6,
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFF4CAF50),
+                      fontWeight: FontWeight.bold,
+                      height: 1.1,
+                    ),
+                  ),
+              ],
+            )
+          else
+            const SizedBox(height: 9), // keep rows same height
+        ],
       ),
     );
   }

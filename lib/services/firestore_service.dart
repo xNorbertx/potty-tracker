@@ -35,6 +35,10 @@ class FirestoreService {
     await _babiesRef(uid).doc(babyId).delete();
   }
 
+  Future<void> updateBabyName(String uid, String babyId, String newName) async {
+    await _babiesRef(uid).doc(babyId).update({'name': newName});
+  }
+
   // ── Poop Entries ──────────────────────────────────────────────────────────
 
   CollectionReference<Map<String, dynamic>> _entriesRef(String uid) =>
