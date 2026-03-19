@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordCtrl = TextEditingController();
   bool _isLogin = true;
   bool _loading = false;
+  bool _googleLoading = false;
   bool _obscurePassword = true;
 
   @override
@@ -56,8 +57,30 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _googleLoading = true);
+    try {
+      final auth = context.read<AuthService>();
+      final result = await auth.signInWithGoogle();
+      if (result == null) return; // user cancelled
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google sign-in failed: ${_friendlyError(e.toString())}'),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
+  }
+
   String _friendlyError(String raw) {
-    if (raw.contains('user-not-found') || raw.contains('wrong-password') ||
+    if (raw.contains('user-not-found') ||
+        raw.contains('wrong-password') ||
         raw.contains('invalid-credential')) {
       return 'Invalid email or password.';
     }
@@ -69,6 +92,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     if (raw.contains('invalid-email')) {
       return 'Please enter a valid email address.';
+    }
+    if (raw.contains('cancelled') || raw.contains('canceled')) {
+      return 'Sign-in cancelled.';
     }
     return 'Something went wrong. Please try again.';
   }
@@ -99,6 +125,61 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(fontSize: 15, color: Colors.grey),
                 ),
                 const SizedBox(height: 36),
+
+                // ── Google Sign-In Button ───────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: (_loading || _googleLoading)
+                        ? null
+                        : _signInWithGoogle,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Color(0xFFDDDDDD)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: _googleLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const _GoogleLogo(),
+                    label: Text(
+                      _googleLoading
+                          ? 'Signing in...'
+                          : 'Continue with Google',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Divider ────────────────────────────────────────────
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'or',
+                        style: TextStyle(color: Colors.grey.shade500),
+                      ),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Email / Password ───────────────────────────────────
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -129,14 +210,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
                               labelText: 'Password',
-                              prefixIcon:
-                                  const Icon(Icons.lock_outline),
+                              prefixIcon: const Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 icon: Icon(_obscurePassword
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined),
-                                onPressed: () => setState(
-                                    () => _obscurePassword = !_obscurePassword),
+                                onPressed: () => setState(() =>
+                                    _obscurePassword = !_obscurePassword),
                               ),
                             ),
                             validator: (v) {
@@ -153,7 +233,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _loading ? null : _submit,
+                              onPressed:
+                                  (_loading || _googleLoading) ? null : _submit,
                               child: _loading
                                   ? const SizedBox(
                                       height: 20,
@@ -163,7 +244,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : Text(_isLogin ? 'Sign In' : 'Create Account'),
+                                  : Text(_isLogin
+                                      ? 'Sign In'
+                                      : 'Create Account'),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -174,8 +257,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               _isLogin
                                   ? "Don't have an account? Register"
                                   : 'Already have an account? Sign in',
-                              style:
-                                  const TextStyle(color: Color(0xFF4CAF50)),
+                              style: const TextStyle(
+                                  color: Color(0xFF4CAF50)),
                             ),
                           ),
                         ],
@@ -190,4 +273,75 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+}
+
+// ── Simple Google 'G' logo drawn with Canvas ──────────────────────────────
+
+class _GoogleLogo extends StatelessWidget {
+  const _GoogleLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CustomPaint(painter: _GoogleLogoPainter()),
+    );
+  }
+}
+
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Blue arc
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.4, 2.8, false,
+      Paint()
+        ..color = const Color(0xFF4285F4)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5,
+    );
+    // Red arc
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      1.4, 1.6, false,
+      Paint()
+        ..color = const Color(0xFFEA4335)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5,
+    );
+    // Yellow arc
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.3, 1.6, false,
+      Paint()
+        ..color = const Color(0xFFFBBC05)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5,
+    );
+    // Green arc
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.8, 0.5, false,
+      Paint()
+        ..color = const Color(0xFF34A853)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5,
+    );
+    // Horizontal bar of the G
+    canvas.drawLine(
+      Offset(center.dx, center.dy),
+      Offset(center.dx + radius, center.dy),
+      Paint()
+        ..color = const Color(0xFF4285F4)
+        ..strokeWidth = 3.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
