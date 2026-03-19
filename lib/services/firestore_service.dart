@@ -45,11 +45,15 @@ class FirestoreService {
       _db.collection('users').doc(uid).collection('poop_entries');
 
   Stream<List<PoopEntry>> entriesStream(String uid, String babyId) {
+    // Sort client-side to avoid needing a composite Firestore index
     return _entriesRef(uid)
         .where('babyId', isEqualTo: babyId)
-        .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map(PoopEntry.fromFirestore).toList());
+        .map((snap) {
+      final list = snap.docs.map(PoopEntry.fromFirestore).toList();
+      list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return list;
+    });
   }
 
   Future<PoopEntry> addEntry({
