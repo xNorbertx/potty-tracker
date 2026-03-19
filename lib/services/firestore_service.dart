@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../models/baby.dart';
@@ -12,44 +13,80 @@ class FirestoreService {
       : _db = db ?? FirebaseFirestore.instance,
         _uuid = const Uuid();
 
-  // ── Baby ──────────────────────────────────────────────────────────────────
+  // ── Share code generation ─────────────────────────────────────────────────
 
-  CollectionReference<Map<String, dynamic>> _babiesRef(String uid) =>
-      _db.collection('users').doc(uid).collection('babies');
+  String _generateShareCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars
+    final rng = Random.secure();
+    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
+  }
+
+  // ── Babies ────────────────────────────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> get _babiesRef =>
+      _db.collection('babies');
 
   Stream<List<Baby>> babiesStream(String uid) {
-    return _babiesRef(uid)
-        .orderBy('createdAt')
+    return _babiesRef
+        .where('memberUids', arrayContains: uid)
         .snapshots()
         .map((snap) => snap.docs.map(Baby.fromFirestore).toList());
   }
 
   Future<Baby> addBaby(String uid, String name) async {
     final id = _uuid.v4();
-    final baby = Baby(id: id, name: name, createdAt: DateTime.now());
-    await _babiesRef(uid).doc(id).set(baby.toFirestore());
+    final shareCode = _generateShareCode();
+    final baby = Baby(
+      id: id,
+      name: name,
+      ownerUid: uid,
+      memberUids: [uid],
+      shareCode: shareCode,
+      createdAt: DateTime.now(),
+    );
+    final batch = _db.batch();
+    batch.set(_babiesRef.doc(id), baby.toFirestore());
+    batch.set(
+        _db.collection('share_codes').doc(shareCode), {'babyId': id});
+    await batch.commit();
     return baby;
   }
 
-  Future<void> deleteBaby(String uid, String babyId) async {
-    await _babiesRef(uid).doc(babyId).delete();
+  Future<void> updateBabyName(String babyId, String newName) async {
+    await _babiesRef.doc(babyId).update({'name': newName});
   }
 
-  Future<void> updateBabyName(String uid, String babyId, String newName) async {
-    await _babiesRef(uid).doc(babyId).update({'name': newName});
+  Future<Baby?> joinBabyWithCode(String uid, String code) async {
+    final codeDoc = await _db
+        .collection('share_codes')
+        .doc(code.toUpperCase().trim())
+        .get();
+    if (!codeDoc.exists) return null;
+    final babyId = codeDoc.data()!['babyId'] as String;
+    final babyDoc = await _babiesRef.doc(babyId).get();
+    if (!babyDoc.exists) return null;
+    final baby = Baby.fromFirestore(babyDoc);
+    if (baby.memberUids.contains(uid)) return baby; // already a member
+    await _babiesRef.doc(babyId).update({
+      'memberUids': FieldValue.arrayUnion([uid]),
+    });
+    return Baby(
+      id: baby.id,
+      name: baby.name,
+      ownerUid: baby.ownerUid,
+      memberUids: [...baby.memberUids, uid],
+      shareCode: baby.shareCode,
+      createdAt: baby.createdAt,
+    );
   }
 
   // ── Poop Entries ──────────────────────────────────────────────────────────
 
-  CollectionReference<Map<String, dynamic>> _entriesRef(String uid) =>
-      _db.collection('users').doc(uid).collection('poop_entries');
+  CollectionReference<Map<String, dynamic>> _entriesRef(String babyId) =>
+      _babiesRef.doc(babyId).collection('entries');
 
-  Stream<List<PoopEntry>> entriesStream(String uid, String babyId) {
-    // Sort client-side to avoid needing a composite Firestore index
-    return _entriesRef(uid)
-        .where('babyId', isEqualTo: babyId)
-        .snapshots()
-        .map((snap) {
+  Stream<List<PoopEntry>> entriesStream(String babyId) {
+    return _entriesRef(babyId).snapshots().map((snap) {
       final list = snap.docs.map(PoopEntry.fromFirestore).toList();
       list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return list;
@@ -70,13 +107,14 @@ class FirestoreService {
       timestamp: timestamp,
       consistency: consistency,
       notes: notes,
+      loggedBy: uid,
       createdAt: DateTime.now(),
     );
-    await _entriesRef(uid).doc(id).set(entry.toFirestore());
+    await _entriesRef(babyId).doc(id).set(entry.toFirestore());
     return entry;
   }
 
-  Future<void> deleteEntry(String uid, String entryId) async {
-    await _entriesRef(uid).doc(entryId).delete();
+  Future<void> deleteEntry(String babyId, String entryId) async {
+    await _entriesRef(babyId).doc(entryId).delete();
   }
 }

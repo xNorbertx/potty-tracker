@@ -7,6 +7,7 @@ class PoopEntry {
   final DateTime timestamp;
   final Consistency consistency;
   final String? notes;
+  final String? loggedBy;
   final DateTime createdAt;
 
   PoopEntry({
@@ -15,6 +16,7 @@ class PoopEntry {
     required this.timestamp,
     required this.consistency,
     this.notes,
+    this.loggedBy,
     required this.createdAt,
   });
 
@@ -28,6 +30,7 @@ class PoopEntry {
         data['consistency'] as String? ?? 'normal',
       ),
       notes: data['notes'] as String?,
+      loggedBy: data['loggedBy'] as String?,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
     );
   }
@@ -38,6 +41,7 @@ class PoopEntry {
       'timestamp': Timestamp.fromDate(timestamp),
       'consistency': consistency.value,
       if (notes != null) 'notes': notes,
+      if (loggedBy != null) 'loggedBy': loggedBy,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -48,6 +52,7 @@ class PoopEntry {
     DateTime? timestamp,
     Consistency? consistency,
     String? notes,
+    String? loggedBy,
     DateTime? createdAt,
   }) {
     return PoopEntry(
@@ -56,6 +61,7 @@ class PoopEntry {
       timestamp: timestamp ?? this.timestamp,
       consistency: consistency ?? this.consistency,
       notes: notes ?? this.notes,
+      loggedBy: loggedBy ?? this.loggedBy,
       createdAt: createdAt ?? this.createdAt,
     );
   }

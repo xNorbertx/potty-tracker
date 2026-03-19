@@ -13,10 +13,14 @@ void main() {
   });
 
   group('FirestoreService - babies', () {
-    test('addBaby creates a baby document', () async {
+    test('addBaby creates a baby document with share code', () async {
       final baby = await service.addBaby('user1', 'Alice');
       expect(baby.name, 'Alice');
       expect(baby.id, isNotEmpty);
+      expect(baby.ownerUid, 'user1');
+      expect(baby.memberUids, contains('user1'));
+      expect(baby.shareCode, isNotEmpty);
+      expect(baby.shareCode.length, 6);
     });
 
     test('babiesStream emits added baby', () async {
@@ -27,15 +31,7 @@ void main() {
       expect(babies.first.name, 'Bob');
     });
 
-    test('deleteBaby removes the document', () async {
-      final baby = await service.addBaby('user1', 'Charlie');
-      await service.deleteBaby('user1', baby.id);
-
-      final babies = await service.babiesStream('user1').first;
-      expect(babies, isEmpty);
-    });
-
-    test('babies are isolated by user', () async {
+    test('babies are isolated by user (memberUids)', () async {
       await service.addBaby('user1', 'Alice');
       await service.addBaby('user2', 'Other');
 
@@ -46,6 +42,20 @@ void main() {
       expect(user1Babies.first.name, 'Alice');
       expect(user2Babies.length, 1);
       expect(user2Babies.first.name, 'Other');
+    });
+
+    test('joinBabyWithCode adds user to memberUids', () async {
+      final baby = await service.addBaby('user1', 'Charlie');
+      final joined =
+          await service.joinBabyWithCode('user2', baby.shareCode);
+
+      expect(joined, isNotNull);
+      expect(joined!.memberUids, containsAll(['user1', 'user2']));
+    });
+
+    test('joinBabyWithCode returns null for invalid code', () async {
+      final result = await service.joinBabyWithCode('user2', 'XXXXXX');
+      expect(result, isNull);
     });
   });
 
@@ -61,6 +71,7 @@ void main() {
 
       expect(entry.babyId, baby.id);
       expect(entry.consistency, Consistency.normal);
+      expect(entry.loggedBy, 'user1');
     });
 
     test('addEntry with notes saves notes', () async {
@@ -85,7 +96,7 @@ void main() {
         consistency: Consistency.watery,
       );
 
-      final entries = await service.entriesStream('user1', baby.id).first;
+      final entries = await service.entriesStream(baby.id).first;
       expect(entries.length, 1);
       expect(entries.first.consistency, Consistency.watery);
     });
@@ -99,8 +110,8 @@ void main() {
         consistency: Consistency.hard,
       );
 
-      await service.deleteEntry('user1', entry.id);
-      final entries = await service.entriesStream('user1', baby.id).first;
+      await service.deleteEntry(baby.id, entry.id);
+      final entries = await service.entriesStream(baby.id).first;
       expect(entries, isEmpty);
     });
 
@@ -111,16 +122,22 @@ void main() {
       final t3 = DateTime(2024, 6, 15, 16, 0);
 
       await service.addEntry(
-          uid: 'user1', babyId: baby.id, timestamp: t1,
+          uid: 'user1',
+          babyId: baby.id,
+          timestamp: t1,
           consistency: Consistency.normal);
       await service.addEntry(
-          uid: 'user1', babyId: baby.id, timestamp: t2,
+          uid: 'user1',
+          babyId: baby.id,
+          timestamp: t2,
           consistency: Consistency.soft);
       await service.addEntry(
-          uid: 'user1', babyId: baby.id, timestamp: t3,
+          uid: 'user1',
+          babyId: baby.id,
+          timestamp: t3,
           consistency: Consistency.hard);
 
-      final entries = await service.entriesStream('user1', baby.id).first;
+      final entries = await service.entriesStream(baby.id).first;
       expect(entries.length, 3);
       // Should be descending (most recent first)
       expect(entries[0].timestamp.compareTo(entries[1].timestamp),
