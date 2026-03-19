@@ -9,8 +9,9 @@ import '../widgets/consistency_selector.dart';
 
 class LogPoopScreen extends StatefulWidget {
   final Baby baby;
+  final DateTime? initialDate;
 
-  const LogPoopScreen({super.key, required this.baby});
+  const LogPoopScreen({super.key, required this.baby, this.initialDate});
 
   @override
   State<LogPoopScreen> createState() => _LogPoopScreenState();
@@ -25,7 +26,13 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDateTime = DateTime.now();
+    final now = DateTime.now();
+    final base = widget.initialDate ?? now;
+    // Use the selected day but always current time
+    _selectedDateTime = DateTime(
+      base.year, base.month, base.day,
+      now.hour, now.minute,
+    );
   }
 
   @override
@@ -35,11 +42,12 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   }
 
   Future<void> _pickDate() async {
+    final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDateTime,
+      initialDate: _selectedDateTime.isAfter(now) ? now : _selectedDateTime,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: now,
     );
     if (picked != null) {
       setState(() {

@@ -33,7 +33,7 @@ class CalendarWidget extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 8),
         child: TableCalendar<PoopEntry>(
           firstDay: DateTime.utc(2020),
-          lastDay: DateTime.utc(2030, 12, 31),
+          lastDay: DateTime.now(),
           focusedDay: focusedDay,
           selectedDayPredicate: (day) => isSameDay(selectedDay, day),
           eventLoader: _getEntriesForDay,
@@ -41,7 +41,7 @@ class CalendarWidget extends StatelessWidget {
           onPageChanged: onPageChanged,
           calendarFormat: CalendarFormat.month,
           availableCalendarFormats: const {CalendarFormat.month: 'Month'},
-          rowHeight: 56,
+          rowHeight: 60,
           daysOfWeekHeight: 28,
           // Disable built-in markers — we draw our own inside calendarBuilders
           calendarStyle: CalendarStyle(
@@ -156,7 +156,7 @@ class _DayCell extends StatelessWidget {
     final overflow = count > 3 ? count - 3 : 0;
 
     return Container(
-      margin: const EdgeInsets.all(3),
+      margin: const EdgeInsets.all(1),
       decoration: BoxDecoration(
         color: bgColor,
         shape: BoxShape.circle,

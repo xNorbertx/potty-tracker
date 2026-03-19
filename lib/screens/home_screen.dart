@@ -261,7 +261,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => LogPoopScreen(baby: baby),
+                      builder: (_) => LogPoopScreen(
+                        baby: baby,
+                        initialDate: _selectedDay,
+                      ),
                     ),
                   );
                 },
