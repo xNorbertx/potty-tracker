@@ -27,6 +27,11 @@ macos/Flutter/ephemeral/
 windows/flutter/ephemeral/
 linux/flutter/ephemeral/
 
+# Firebase config (contains API keys — keep local only)
+lib/firebase_options.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
 # Misc
 .DS_Store
 *.log

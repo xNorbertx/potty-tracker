@@ -1,3 +1,6 @@
+// Copy this file to firebase_options.dart and fill in your Firebase project values.
+// Get these from: Firebase Console → Project Settings → Your apps
+
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
@@ -18,19 +21,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDJWtvN0pngLhmTL9_pkU7QqJLN4yRZW7A',
-    appId: '1:39283042015:web:a4f6ca98f8e7213ad56b6a',
-    messagingSenderId: '39283042015',
-    projectId: 'baby-poop-tracker',
-    authDomain: 'baby-poop-tracker.firebaseapp.com',
-    storageBucket: 'baby-poop-tracker.firebasestorage.app',
+    apiKey: 'YOUR_WEB_API_KEY',
+    appId: 'YOUR_WEB_APP_ID',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+    storageBucket: 'YOUR_PROJECT_ID.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDlt8uFKQ4PayunvS72N-jn0tCdDKMTSNs',
-    appId: '1:39283042015:android:b8e76f2be649c643d56b6a',
-    messagingSenderId: '39283042015',
-    projectId: 'baby-poop-tracker',
-    storageBucket: 'baby-poop-tracker.firebasestorage.app',
+    apiKey: 'YOUR_ANDROID_API_KEY',
+    appId: 'YOUR_ANDROID_APP_ID',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT_ID.firebasestorage.app',
   );
 }
