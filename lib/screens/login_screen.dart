@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   bool _loading = false;
   bool _googleLoading = false;
+  bool _microsoftLoading = false;
   bool _obscurePassword = true;
 
   @override
@@ -62,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final auth = context.read<AuthService>();
       final result = await auth.signInWithGoogle();
-      if (result == null) return; // user cancelled
+      if (result == null) return;
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -75,6 +76,27 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } finally {
       if (mounted) setState(() => _googleLoading = false);
+    }
+  }
+
+  Future<void> _signInWithMicrosoft() async {
+    setState(() => _microsoftLoading = true);
+    try {
+      final auth = context.read<AuthService>();
+      final result = await auth.signInWithMicrosoft();
+      if (result == null) return;
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Microsoft sign-in failed: ${_friendlyError(e.toString())}'),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _microsoftLoading = false);
     }
   }
 
@@ -130,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: (_loading || _googleLoading)
+                    onPressed: (_loading || _googleLoading || _microsoftLoading)
                         ? null
                         : _signInWithGoogle,
                     style: OutlinedButton.styleFrom(
@@ -151,6 +173,42 @@ class _LoginScreenState extends State<LoginScreen> {
                       _googleLoading
                           ? 'Signing in...'
                           : 'Continue with Google',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // ── Microsoft Sign-In Button ────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: (_loading || _googleLoading || _microsoftLoading)
+                        ? null
+                        : _signInWithMicrosoft,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Color(0xFFDDDDDD)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: _microsoftLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const _MicrosoftLogo(),
+                    label: Text(
+                      _microsoftLoading
+                          ? 'Signing in...'
+                          : 'Continue with Microsoft',
                       style: const TextStyle(
                         fontSize: 15,
                         color: Colors.black87,
@@ -234,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed:
-                                  (_loading || _googleLoading) ? null : _submit,
+                                  (_loading || _googleLoading || _microsoftLoading) ? null : _submit,
                               child: _loading
                                   ? const SizedBox(
                                       height: 20,
@@ -273,6 +331,50 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+}
+
+// ── Microsoft logo (4 coloured squares) ───────────────────────────────────
+
+class _MicrosoftLogo extends StatelessWidget {
+  const _MicrosoftLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CustomPaint(painter: _MicrosoftLogoPainter()),
+    );
+  }
+}
+
+class _MicrosoftLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final half = size.width / 2;
+    final gap = size.width * 0.05;
+    final sq = half - gap;
+
+    final rects = [
+      Rect.fromLTWH(0, 0, sq, sq),                         // top-left: red
+      Rect.fromLTWH(half, 0, sq, sq),                      // top-right: green
+      Rect.fromLTWH(0, half, sq, sq),                      // bottom-left: blue
+      Rect.fromLTWH(half, half, sq, sq),                   // bottom-right: yellow
+    ];
+    final colors = [
+      const Color(0xFFF25022),
+      const Color(0xFF7FBA00),
+      const Color(0xFF00A4EF),
+      const Color(0xFFFFB900),
+    ];
+
+    for (var i = 0; i < 4; i++) {
+      canvas.drawRect(rects[i], Paint()..color = colors[i]);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ── Simple Google 'G' logo drawn with Canvas ──────────────────────────────

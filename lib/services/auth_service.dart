@@ -35,14 +35,11 @@ class AuthService {
 
   Future<UserCredential?> signInWithGoogle() async {
     if (kIsWeb) {
-      // Web: use popup flow
       final googleProvider = GoogleAuthProvider();
       return await _auth.signInWithPopup(googleProvider);
     } else {
-      // Native Android/iOS: use google_sign_in package
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // user cancelled
-
+      if (googleUser == null) return null;
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -50,6 +47,16 @@ class AuthService {
       );
       return await _auth.signInWithCredential(credential);
     }
+  }
+
+  Future<UserCredential?> signInWithMicrosoft() async {
+    final microsoftProvider = OAuthProvider('microsoft.com');
+    microsoftProvider.setCustomParameters({
+      'prompt': 'select_account',
+      'tenant': 'common',
+    });
+    // Both web and Android use popup/redirect via Firebase
+    return await _auth.signInWithPopup(microsoftProvider);
   }
 
   Future<void> signOut() async {
