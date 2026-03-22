@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/poop_entry.dart';
 import '../models/consistency.dart';
+import '../models/poop_size.dart';
 
 class PoopEntryTile extends StatelessWidget {
   final PoopEntry entry;
@@ -71,9 +72,22 @@ class PoopEntryTile extends StatelessWidget {
             entry.consistency.label,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          subtitle: entry.notes != null && entry.notes!.isNotEmpty
-              ? Text(entry.notes!)
-              : null,
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.size != null
+                    ? '${entry.size!.emoji} ${entry.size!.label}'
+                    : 'No size selected',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: entry.size != null ? Colors.black87 : Colors.grey,
+                ),
+              ),
+              if (entry.notes != null && entry.notes!.isNotEmpty)
+                Text(entry.notes!),
+            ],
+          ),
           trailing: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,

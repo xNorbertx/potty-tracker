@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/consistency.dart';
+import '../models/poop_size.dart';
 import '../models/baby.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/consistency_selector.dart';
+import '../widgets/size_selector.dart';
 
 class LogPoopScreen extends StatefulWidget {
   final Baby baby;
@@ -20,6 +22,7 @@ class LogPoopScreen extends StatefulWidget {
 class _LogPoopScreenState extends State<LogPoopScreen> {
   late DateTime _selectedDateTime;
   Consistency? _selectedConsistency;
+  PoopSize? _selectedSize;
   final _notesCtrl = TextEditingController();
   bool _loading = false;
 
@@ -97,6 +100,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
         babyId: widget.baby.id,
         timestamp: _selectedDateTime,
         consistency: _selectedConsistency!,
+        size: _selectedSize,
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       );
       if (!mounted) return;
@@ -179,6 +183,14 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
             ConsistencySelector(
               selected: _selectedConsistency,
               onSelected: (c) => setState(() => _selectedConsistency = c),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Size selector
+            SizeSelector(
+              selected: _selectedSize,
+              onSelected: (s) => setState(() => _selectedSize = s),
             ),
 
             const SizedBox(height: 16),

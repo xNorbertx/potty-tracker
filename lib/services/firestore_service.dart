@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/baby.dart';
 import '../models/poop_entry.dart';
 import '../models/consistency.dart';
+import '../models/poop_size.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db;
@@ -98,6 +99,7 @@ class FirestoreService {
     required String babyId,
     required DateTime timestamp,
     required Consistency consistency,
+    PoopSize? size,
     String? notes,
   }) async {
     final id = _uuid.v4();
@@ -106,6 +108,7 @@ class FirestoreService {
       babyId: babyId,
       timestamp: timestamp,
       consistency: consistency,
+      size: size,
       notes: notes,
       loggedBy: uid,
       createdAt: DateTime.now(),
