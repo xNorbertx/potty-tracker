@@ -64,21 +64,20 @@ class FirestoreService {
         .get();
     if (!codeDoc.exists) return null;
     final babyId = codeDoc.data()!['babyId'] as String;
-    final babyDoc = await _babiesRef.doc(babyId).get();
-    if (!babyDoc.exists) return null;
-    final baby = Baby.fromFirestore(babyDoc);
-    if (baby.memberUids.contains(uid)) return baby; // already a member
-    await _babiesRef.doc(babyId).update({
-      'memberUids': FieldValue.arrayUnion([uid]),
-    });
-    return Baby(
-      id: baby.id,
-      name: baby.name,
-      ownerUid: baby.ownerUid,
-      memberUids: [...baby.memberUids, uid],
-      shareCode: baby.shareCode,
-      createdAt: baby.createdAt,
-    );
+    final babyRef = _babiesRef.doc(babyId);
+
+    try {
+      await babyRef.update({
+        'memberUids': FieldValue.arrayUnion([uid]),
+      });
+    } on FirebaseException catch (e) {
+      if (e.code == 'not-found') return null;
+      rethrow;
+    }
+
+    final updatedDoc = await babyRef.get();
+    if (!updatedDoc.exists) return null;
+    return Baby.fromFirestore(updatedDoc);
   }
 
   // ── Poop Entries ──────────────────────────────────────────────────────────
