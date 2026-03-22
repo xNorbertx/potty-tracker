@@ -66,11 +66,11 @@ void main() {
         uid: 'user1',
         babyId: baby.id,
         timestamp: DateTime(2024, 6, 15, 10, 30),
-        consistency: Consistency.normal,
+        consistency: Consistency.soft,
       );
 
       expect(entry.babyId, baby.id);
-      expect(entry.consistency, Consistency.normal);
+      expect(entry.consistency, Consistency.soft);
       expect(entry.loggedBy, 'user1');
     });
 
@@ -125,7 +125,7 @@ void main() {
           uid: 'user1',
           babyId: baby.id,
           timestamp: t1,
-          consistency: Consistency.normal);
+          consistency: Consistency.soft);
       await service.addEntry(
           uid: 'user1',
           babyId: baby.id,

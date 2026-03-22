@@ -1,15 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:potty_tracker/models/consistency.dart';
 import 'package:potty_tracker/models/poop_entry.dart';
+import 'package:potty_tracker/models/poop_size.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 
 void main() {
   group('Consistency enum', () {
-    test('normal has correct emoji and label', () {
-      expect(Consistency.normal.emoji, '💩');
-      expect(Consistency.normal.label, 'Normal');
-    });
-
     test('soft has correct emoji and label', () {
       expect(Consistency.soft.emoji, '💛');
       expect(Consistency.soft.label, 'Soft/Mushy');
@@ -31,21 +27,40 @@ void main() {
     });
 
     test('fromString returns correct consistency', () {
-      expect(ConsistencyExtension.fromString('normal'), Consistency.normal);
       expect(ConsistencyExtension.fromString('soft'), Consistency.soft);
       expect(ConsistencyExtension.fromString('watery'), Consistency.watery);
       expect(ConsistencyExtension.fromString('hard'), Consistency.hard);
       expect(ConsistencyExtension.fromString('unusual'), Consistency.unusual);
     });
 
-    test('fromString with unknown value returns normal', () {
-      expect(ConsistencyExtension.fromString('unknown'), Consistency.normal);
+    test('fromString with unknown value returns soft', () {
+      expect(ConsistencyExtension.fromString('unknown'), Consistency.soft);
+      // legacy 'normal' values from old logs fall back gracefully to soft
+      expect(ConsistencyExtension.fromString('normal'), Consistency.soft);
     });
 
     test('all consistencies have colors', () {
       for (final c in Consistency.values) {
         expect(c.color, isNotNull);
       }
+    });
+  });
+
+  group('PoopSize enum', () {
+    test('all sizes have correct labels', () {
+      expect(PoopSize.small.label, 'Small');
+      expect(PoopSize.medium.label, 'Medium');
+      expect(PoopSize.large.label, 'Large');
+    });
+
+    test('fromString returns correct size', () {
+      expect(PoopSizeExtension.fromString('small'), PoopSize.small);
+      expect(PoopSizeExtension.fromString('medium'), PoopSize.medium);
+      expect(PoopSizeExtension.fromString('large'), PoopSize.large);
+    });
+
+    test('fromString with null returns null', () {
+      expect(PoopSizeExtension.fromString(null), isNull);
     });
   });
 
@@ -58,6 +73,7 @@ void main() {
         babyId: 'baby-id',
         timestamp: now,
         consistency: Consistency.soft,
+        size: PoopSize.medium,
         notes: 'Test note',
         createdAt: now,
       );
@@ -65,22 +81,24 @@ void main() {
       final map = entry.toFirestore();
       expect(map['babyId'], 'baby-id');
       expect(map['consistency'], 'soft');
+      expect(map['size'], 'medium');
       expect(map['notes'], 'Test note');
       expect(map['timestamp'], isNotNull);
       expect(map['createdAt'], isNotNull);
     });
 
-    test('toFirestore omits null notes', () {
+    test('toFirestore omits null notes and null size', () {
       final entry = PoopEntry(
         id: 'test-id',
         babyId: 'baby-id',
         timestamp: now,
-        consistency: Consistency.normal,
+        consistency: Consistency.soft,
         createdAt: now,
       );
 
       final map = entry.toFirestore();
       expect(map.containsKey('notes'), isFalse);
+      expect(map.containsKey('size'), isFalse);
     });
 
     test('fromFirestore deserializes correctly', () async {
@@ -102,7 +120,6 @@ void main() {
       });
 
       final snap = await ref.get();
-      // Just verify the ID and data exist
       expect(snap.id, 'entry-1');
       final data = snap.data() as Map<String, dynamic>;
       expect(data['babyId'], 'baby-1');
@@ -115,7 +132,7 @@ void main() {
           id: '',
           babyId: '',
           timestamp: now,
-          consistency: Consistency.normal,
+          consistency: Consistency.soft,
           createdAt: now,
         ),
         returnsNormally,
@@ -127,7 +144,7 @@ void main() {
         id: 'id1',
         babyId: 'baby1',
         timestamp: now,
-        consistency: Consistency.normal,
+        consistency: Consistency.soft,
         createdAt: now,
       );
 
@@ -136,6 +153,17 @@ void main() {
       expect(updated.babyId, 'baby1');
       expect(updated.consistency, Consistency.hard);
       expect(updated.timestamp, now);
+    });
+
+    test('size is null for old entries without size field', () {
+      final entry = PoopEntry(
+        id: 'id1',
+        babyId: 'baby1',
+        timestamp: now,
+        consistency: Consistency.soft,
+        createdAt: now,
+      );
+      expect(entry.size, isNull);
     });
   });
 
@@ -149,7 +177,7 @@ void main() {
           id: '1',
           babyId: 'b',
           timestamp: day1,
-          consistency: Consistency.normal,
+          consistency: Consistency.soft,
           createdAt: day1,
         ),
         PoopEntry(
