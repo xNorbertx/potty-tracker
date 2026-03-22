@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 enum Consistency {
-  normal,
   soft,
   watery,
   hard,
@@ -11,8 +10,6 @@ enum Consistency {
 extension ConsistencyExtension on Consistency {
   String get emoji {
     switch (this) {
-      case Consistency.normal:
-        return '💩';
       case Consistency.soft:
         return '💛';
       case Consistency.watery:
@@ -26,8 +23,6 @@ extension ConsistencyExtension on Consistency {
 
   String get label {
     switch (this) {
-      case Consistency.normal:
-        return 'Normal';
       case Consistency.soft:
         return 'Soft/Mushy';
       case Consistency.watery:
@@ -41,8 +36,6 @@ extension ConsistencyExtension on Consistency {
 
   Color get color {
     switch (this) {
-      case Consistency.normal:
-        return const Color(0xFF8D6E63);
       case Consistency.soft:
         return const Color(0xFFFDD835);
       case Consistency.watery:
@@ -59,7 +52,7 @@ extension ConsistencyExtension on Consistency {
   static Consistency fromString(String value) {
     return Consistency.values.firstWhere(
       (c) => c.name == value,
-      orElse: () => Consistency.normal,
+      orElse: () => Consistency.soft,
     );
   }
 }
