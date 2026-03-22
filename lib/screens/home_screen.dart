@@ -34,8 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return _entriesStream!;
   }
 
-  Future<void> _showRenameBabyDialog(
-      BuildContext context, Baby baby) async {
+  Future<void> _showRenameBabyDialog(BuildContext context, Baby baby) async {
     final ctrl = TextEditingController(text: baby.name);
     final formKey = GlobalKey<FormState>();
     final firestore = context.read<FirestoreService>();
@@ -99,8 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text('Give this code to your partner:'),
             const SizedBox(height: 16),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
                 color: const Color(0xFFE8F5E9),
                 borderRadius: BorderRadius.circular(12),
@@ -138,8 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Done')),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
         ],
       ),
     );
@@ -173,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // Confirmed empty → go to setup
         if (babies.isEmpty) {
-          return _SetupScreen(uid: uid, firestore: firestore);
+          return _SetupScreen(uid: uid, firestore: firestore, auth: auth);
         }
 
         final baby = babies.first;
@@ -252,8 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _selectedDay = day;
                       _focusedDay = day;
                     }),
-                    onPageChanged: (day) =>
-                        setState(() => _focusedDay = day),
+                    onPageChanged: (day) => setState(() => _focusedDay = day),
                   ),
                   const Divider(height: 1),
                   if (dayEntries.isEmpty)
@@ -262,8 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('🌟',
-                                style: TextStyle(fontSize: 40)),
+                            const Text('🌟', style: TextStyle(fontSize: 40)),
                             const SizedBox(height: 8),
                             const Text(
                               'No entries for this day',
@@ -272,8 +267,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(height: 4),
                             const Text(
                               'Tap 💩 to log one!',
-                              style: TextStyle(
-                                  color: Colors.grey, fontSize: 13),
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 13),
                             ),
                           ],
                         ),
@@ -289,8 +284,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           Expanded(
                             child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               itemCount: dayEntries.length,
                               itemBuilder: (ctx, i) => PoopEntryTile(
                                 entry: dayEntries[i],
@@ -304,10 +299,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     if (!mounted) return;
                                     messenger.showSnackBar(
                                       SnackBar(
-                                        content:
-                                            Text('Error deleting: $e'),
-                                        backgroundColor:
-                                            Colors.red.shade400,
+                                        content: Text('Error deleting: $e'),
+                                        backgroundColor: Colors.red.shade400,
                                       ),
                                     );
                                   }
@@ -348,8 +341,13 @@ class _HomeScreenState extends State<HomeScreen> {
 class _SetupScreen extends StatefulWidget {
   final String uid;
   final FirestoreService firestore;
+  final AuthService auth;
 
-  const _SetupScreen({required this.uid, required this.firestore});
+  const _SetupScreen({
+    required this.uid,
+    required this.firestore,
+    required this.auth,
+  });
 
   @override
   State<_SetupScreen> createState() => _SetupScreenState();
@@ -383,6 +381,13 @@ class _SetupScreenState extends State<_SetupScreen>
     super.dispose();
   }
 
+  Future<void> _signOut() async {
+    final navigator = Navigator.of(context);
+    await widget.auth.signOut();
+    if (!mounted) return;
+    navigator.pushReplacementNamed('/login');
+  }
+
   Future<void> _createBaby() async {
     if (!_createFormKey.currentState!.validate()) return;
     setState(() => _loading = true);
@@ -413,8 +418,7 @@ class _SetupScreenState extends State<_SetupScreen>
       _joinError = null;
     });
     try {
-      final baby =
-          await widget.firestore.joinBabyWithCode(widget.uid, code);
+      final baby = await widget.firestore.joinBabyWithCode(widget.uid, code);
       if (!mounted) return;
       if (baby == null) {
         setState(() {
@@ -443,7 +447,18 @@ class _SetupScreenState extends State<_SetupScreen>
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 32),
+            Padding(
+              padding: const EdgeInsets.only(top: 8, right: 16),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _loading ? null : _signOut,
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text('Log out'),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             const Text('👶', style: TextStyle(fontSize: 72)),
             const SizedBox(height: 12),
             const Text(
@@ -485,8 +500,7 @@ class _SetupScreenState extends State<_SetupScreen>
                           const SizedBox(height: 8),
                           const Text(
                             "We'll use this to personalize your poop diary 💩",
-                            style:
-                                TextStyle(fontSize: 14, color: Colors.grey),
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
@@ -495,8 +509,8 @@ class _SetupScreenState extends State<_SetupScreen>
                             textCapitalization: TextCapitalization.words,
                             decoration: const InputDecoration(
                               labelText: "Baby's name",
-                              prefixIcon: Text('👶',
-                                  style: TextStyle(fontSize: 20)),
+                              prefixIcon:
+                                  Text('👶', style: TextStyle(fontSize: 20)),
                               prefixIconConstraints: BoxConstraints(
                                 minWidth: 52,
                                 minHeight: 52,
@@ -545,8 +559,7 @@ class _SetupScreenState extends State<_SetupScreen>
                         const SizedBox(height: 8),
                         const Text(
                           'Enter the 6-character share code from your partner\'s app.',
-                          style:
-                              TextStyle(fontSize: 14, color: Colors.grey),
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
@@ -563,8 +576,7 @@ class _SetupScreenState extends State<_SetupScreen>
                           decoration: InputDecoration(
                             hintText: 'ABC123',
                             hintStyle: TextStyle(
-                                color: Colors.grey.shade400,
-                                letterSpacing: 6),
+                                color: Colors.grey.shade400, letterSpacing: 6),
                             errorText: _joinError,
                             counterText: '',
                           ),
