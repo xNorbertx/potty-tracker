@@ -5,6 +5,7 @@ import '../models/baby.dart';
 import '../models/poop_entry.dart';
 import '../models/consistency.dart';
 import '../models/poop_size.dart';
+import '../models/poop_color.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db;
@@ -47,8 +48,7 @@ class FirestoreService {
     );
     final batch = _db.batch();
     batch.set(_babiesRef.doc(id), baby.toFirestore());
-    batch.set(
-        _db.collection('share_codes').doc(shareCode), {'babyId': id});
+    batch.set(_db.collection('share_codes').doc(shareCode), {'babyId': id});
     await batch.commit();
     return baby;
   }
@@ -100,6 +100,7 @@ class FirestoreService {
     required DateTime timestamp,
     required Consistency consistency,
     PoopSize? size,
+    PoopColor? color,
     String? notes,
   }) async {
     final id = _uuid.v4();
@@ -109,6 +110,7 @@ class FirestoreService {
       timestamp: timestamp,
       consistency: consistency,
       size: size,
+      color: color,
       notes: notes,
       loggedBy: uid,
       createdAt: DateTime.now(),

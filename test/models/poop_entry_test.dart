@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:potty_tracker/models/consistency.dart';
 import 'package:potty_tracker/models/poop_entry.dart';
 import 'package:potty_tracker/models/poop_size.dart';
+import 'package:potty_tracker/models/poop_color.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 
 void main() {
@@ -64,6 +66,23 @@ void main() {
     });
   });
 
+  group('PoopColor enum', () {
+    test('all colors expose labels and swatches', () {
+      for (final color in PoopColor.values) {
+        expect(color.label, isNotEmpty);
+        expect(color.swatch, isA<Color>());
+      }
+    });
+
+    test('fromString returns matching colour', () {
+      expect(
+        PoopColorExtension.fromString('mustard_yellow'),
+        PoopColor.mustardYellow,
+      );
+      expect(PoopColorExtension.fromString('does-not-exist'), isNull);
+    });
+  });
+
   group('PoopEntry model', () {
     final now = DateTime(2024, 6, 15, 10, 30);
 
@@ -74,6 +93,7 @@ void main() {
         timestamp: now,
         consistency: Consistency.soft,
         size: PoopSize.medium,
+        color: PoopColor.orange,
         notes: 'Test note',
         createdAt: now,
       );
@@ -82,6 +102,7 @@ void main() {
       expect(map['babyId'], 'baby-id');
       expect(map['consistency'], 'soft');
       expect(map['size'], 'medium');
+      expect(map['color'], 'orange');
       expect(map['notes'], 'Test note');
       expect(map['timestamp'], isNotNull);
       expect(map['createdAt'], isNotNull);
@@ -99,6 +120,7 @@ void main() {
       final map = entry.toFirestore();
       expect(map.containsKey('notes'), isFalse);
       expect(map.containsKey('size'), isFalse);
+      expect(map.containsKey('color'), isFalse);
     });
 
     test('fromFirestore deserializes correctly', () async {
@@ -145,13 +167,18 @@ void main() {
         babyId: 'baby1',
         timestamp: now,
         consistency: Consistency.soft,
+        color: PoopColor.brown,
         createdAt: now,
       );
 
-      final updated = entry.copyWith(consistency: Consistency.hard);
+      final updated = entry.copyWith(
+        consistency: Consistency.hard,
+        color: PoopColor.red,
+      );
       expect(updated.id, 'id1');
       expect(updated.babyId, 'baby1');
       expect(updated.consistency, Consistency.hard);
+      expect(updated.color, PoopColor.red);
       expect(updated.timestamp, now);
     });
 

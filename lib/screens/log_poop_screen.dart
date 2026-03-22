@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/consistency.dart';
 import '../models/poop_size.dart';
+import '../models/poop_color.dart';
 import '../models/baby.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/consistency_selector.dart';
 import '../widgets/size_selector.dart';
+import '../widgets/poop_color_selector.dart';
 
 class LogPoopScreen extends StatefulWidget {
   final Baby baby;
@@ -23,6 +25,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   late DateTime _selectedDateTime;
   Consistency? _selectedConsistency;
   PoopSize? _selectedSize;
+  PoopColor? _selectedColor;
   final _notesCtrl = TextEditingController();
   bool _loading = false;
 
@@ -33,8 +36,11 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
     final base = widget.initialDate ?? now;
     // Use the selected day but always current time
     _selectedDateTime = DateTime(
-      base.year, base.month, base.day,
-      now.hour, now.minute,
+      base.year,
+      base.month,
+      base.day,
+      now.hour,
+      now.minute,
     );
   }
 
@@ -101,6 +107,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
         timestamp: _selectedDateTime,
         consistency: _selectedConsistency!,
         size: _selectedSize,
+        color: _selectedColor,
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       );
       if (!mounted) return;
@@ -157,7 +164,8 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
                             onPressed: _pickDate,
                             icon: const Icon(Icons.calendar_today, size: 18),
                             label: Text(
-                              DateFormat('MMM d, yyyy').format(_selectedDateTime),
+                              DateFormat('MMM d, yyyy')
+                                  .format(_selectedDateTime),
                             ),
                           ),
                         ),
@@ -191,6 +199,14 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
             SizeSelector(
               selected: _selectedSize,
               onSelected: (s) => setState(() => _selectedSize = s),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Colour selector
+            PoopColorSelector(
+              selected: _selectedColor,
+              onChanged: (color) => setState(() => _selectedColor = color),
             ),
 
             const SizedBox(height: 16),

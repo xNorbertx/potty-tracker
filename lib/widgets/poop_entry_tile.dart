@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/poop_entry.dart';
 import '../models/consistency.dart';
 import '../models/poop_size.dart';
+import '../models/poop_color.dart';
 
 class PoopEntryTile extends StatelessWidget {
   final PoopEntry entry;
@@ -34,7 +35,8 @@ class PoopEntryTile extends StatelessWidget {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Delete entry?'),
-            content: const Text('This will permanently delete this poop entry.'),
+            content:
+                const Text('This will permanently delete this poop entry.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
@@ -84,8 +86,36 @@ class PoopEntryTile extends StatelessWidget {
                   color: entry.size != null ? Colors.black87 : Colors.grey,
                 ),
               ),
-              if (entry.notes != null && entry.notes!.isNotEmpty)
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: entry.color?.swatch ?? Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                      border:
+                          Border.all(color: Colors.grey.shade400, width: 0.5),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      entry.color?.label ?? 'No color selected',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            entry.color != null ? Colors.black87 : Colors.grey,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (entry.notes != null && entry.notes!.isNotEmpty) ...[
+                const SizedBox(height: 4),
                 Text(entry.notes!),
+              ],
             ],
           ),
           trailing: Column(
