@@ -155,11 +155,11 @@ class _DayCell extends StatelessWidget {
     final dotCount = count > 3 ? 3 : count;
     final overflow = count > 3 ? count - 3 : 0;
 
-    return Center(
+    return SizedBox(
+      height: 58,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Fixed-size circle for the day number
           Container(
             width: 36,
             height: 36,
@@ -181,7 +181,7 @@ class _DayCell extends StatelessWidget {
               ),
             ),
           ),
-          // Dots below the circle
+          const SizedBox(height: 6),
           SizedBox(
             height: 10,
             child: count > 0
