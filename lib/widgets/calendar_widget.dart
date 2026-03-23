@@ -43,12 +43,9 @@ class CalendarWidget extends StatelessWidget {
           availableCalendarFormats: const {CalendarFormat.month: 'Month'},
           rowHeight: 60,
           daysOfWeekHeight: 28,
-          // Disable built-in markers — we draw our own inside calendarBuilders
           calendarStyle: CalendarStyle(
             outsideDaysVisible: false,
-            markersMaxCount: 0,
-            // These only apply to days NOT handled by custom builders,
-            // so keep them neutral:
+            markersMaxCount: 6,
             defaultDecoration: const BoxDecoration(shape: BoxShape.circle),
             weekendDecoration: const BoxDecoration(shape: BoxShape.circle),
             selectedDecoration: const BoxDecoration(shape: BoxShape.circle),
@@ -75,30 +72,72 @@ class CalendarWidget extends StatelessWidget {
             ),
           ),
           calendarBuilders: CalendarBuilders(
+            markerBuilder: (context, day, events) {
+              if (events.isEmpty) return const SizedBox.shrink();
+              final count = events.length;
+              final dotCount = count > 3 ? 3 : count;
+              final overflow = count - dotCount;
+              final bool isSelectedDay =
+                  selectedDay != null && isSameDay(day, selectedDay);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...List.generate(
+                      dotCount,
+                      (_) => Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                        decoration: BoxDecoration(
+                          color: isSelectedDay
+                              ? Colors.white
+                              : const Color(0xFF8D6E63),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    if (overflow > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 1),
+                        child: Text(
+                          '+$overflow',
+                          style: TextStyle(
+                            fontSize: 6,
+                            color: isSelectedDay
+                                ? Colors.white
+                                : const Color(0xFF4CAF50),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
             defaultBuilder: (ctx, day, focused) => _DayCell(
               day: day,
-              count: _getEntriesForDay(day).length,
               isSelected: false,
               isToday: false,
               isWeekend: day.weekday >= 6,
             ),
             selectedBuilder: (ctx, day, focused) => _DayCell(
               day: day,
-              count: _getEntriesForDay(day).length,
               isSelected: true,
               isToday: isSameDay(day, DateTime.now()),
               isWeekend: day.weekday >= 6,
             ),
             todayBuilder: (ctx, day, focused) => _DayCell(
               day: day,
-              count: _getEntriesForDay(day).length,
               isSelected: isSameDay(selectedDay, day),
               isToday: true,
               isWeekend: day.weekday >= 6,
             ),
             outsideBuilder: (ctx, day, focused) => _DayCell(
               day: day,
-              count: 0,
               isSelected: false,
               isToday: false,
               isWeekend: day.weekday >= 6,
@@ -113,7 +152,6 @@ class CalendarWidget extends StatelessWidget {
 
 class _DayCell extends StatelessWidget {
   final DateTime day;
-  final int count;
   final bool isSelected;
   final bool isToday;
   final bool isWeekend;
@@ -121,7 +159,6 @@ class _DayCell extends StatelessWidget {
 
   const _DayCell({
     required this.day,
-    required this.count,
     required this.isSelected,
     required this.isToday,
     required this.isWeekend,
@@ -130,7 +167,6 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Background colour logic
     Color? bgColor;
     Color numberColor;
     FontWeight numberWeight = FontWeight.normal;
@@ -140,7 +176,7 @@ class _DayCell extends StatelessWidget {
       numberColor = Colors.white;
       numberWeight = FontWeight.bold;
     } else if (isToday) {
-      bgColor = const Color(0xFFE8F5E9); // very light green tint
+      bgColor = const Color(0xFFE8F5E9);
       numberColor = const Color(0xFF2E7D32);
       numberWeight = FontWeight.bold;
     } else if (isOutside) {
@@ -151,85 +187,27 @@ class _DayCell extends StatelessWidget {
       numberColor = Colors.black87;
     }
 
-    // Poop dots: small coloured circles (brown), up to 3, then +N text
-    final dotCount = count > 3 ? 3 : count;
-    final overflow = count > 3 ? count - 3 : 0;
-
-    return SizedBox(
-      height: 62,
-      child: Stack(
+    return Center(
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: bgColor,
+          shape: BoxShape.circle,
+          border: isToday && !isSelected
+              ? Border.all(color: const Color(0xFF4CAF50), width: 1.5)
+              : null,
+        ),
         alignment: Alignment.center,
-        children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: bgColor,
-                shape: BoxShape.circle,
-                border: isToday && !isSelected
-                    ? Border.all(color: const Color(0xFF4CAF50), width: 1.5)
-                    : null,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                '${day.day}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: numberWeight,
-                  color: numberColor,
-                  height: 1.0,
-                ),
-              ),
-            ),
+        child: Text(
+          '${day.day}',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: numberWeight,
+            color: numberColor,
+            height: 1.0,
           ),
-          Positioned(
-            bottom: 4,
-            left: 0,
-            right: 0,
-            child: SizedBox(
-              height: 10,
-              child: count > 0
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ...List.generate(
-                          dotCount,
-                          (_) => Container(
-                            width: 5,
-                            height: 5,
-                            margin: const EdgeInsets.symmetric(horizontal: 0.5),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Colors.white.withValues(alpha: 0.9)
-                                  : const Color(0xFF8D6E63),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                        if (overflow > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 1),
-                            child: Text(
-                              '+$overflow',
-                              style: TextStyle(
-                                fontSize: 6,
-                                color: isSelected
-                                    ? Colors.white
-                                    : const Color(0xFF4CAF50),
-                                fontWeight: FontWeight.bold,
-                                height: 1,
-                              ),
-                            ),
-                          ),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
