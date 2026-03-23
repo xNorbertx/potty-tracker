@@ -156,71 +156,78 @@ class _DayCell extends StatelessWidget {
     final overflow = count > 3 ? count - 3 : 0;
 
     return SizedBox(
-      height: 58,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      height: 62,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-              border: isToday && !isSelected
-                  ? Border.all(color: const Color(0xFF4CAF50), width: 1.5)
-                  : null,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              '${day.day}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: numberWeight,
-                color: numberColor,
-                height: 1.0,
+          Align(
+            alignment: Alignment.topCenter,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: bgColor,
+                shape: BoxShape.circle,
+                border: isToday && !isSelected
+                    ? Border.all(color: const Color(0xFF4CAF50), width: 1.5)
+                    : null,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${day.day}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: numberWeight,
+                  color: numberColor,
+                  height: 1.0,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 6),
-          SizedBox(
-            height: 10,
-            child: count > 0
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ...List.generate(
-                        dotCount,
-                        (_) => Container(
-                          width: 5,
-                          height: 5,
-                          margin: const EdgeInsets.symmetric(horizontal: 0.5),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? Colors.white.withValues(alpha: 0.9)
-                                : const Color(0xFF8D6E63),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                      if (overflow > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 1),
-                          child: Text(
-                            '+$overflow',
-                            style: TextStyle(
-                              fontSize: 6,
+          Positioned(
+            bottom: 4,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: 10,
+              child: count > 0
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ...List.generate(
+                          dotCount,
+                          (_) => Container(
+                            width: 5,
+                            height: 5,
+                            margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                            decoration: BoxDecoration(
                               color: isSelected
-                                  ? Colors.white
-                                  : const Color(0xFF4CAF50),
-                              fontWeight: FontWeight.bold,
-                              height: 1,
+                                  ? Colors.white.withValues(alpha: 0.9)
+                                  : const Color(0xFF8D6E63),
+                              shape: BoxShape.circle,
                             ),
                           ),
                         ),
-                    ],
-                  )
-                : const SizedBox.shrink(),
+                        if (overflow > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 1),
+                            child: Text(
+                              '+$overflow',
+                              style: TextStyle(
+                                fontSize: 6,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF4CAF50),
+                                fontWeight: FontWeight.bold,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ),
         ],
       ),
