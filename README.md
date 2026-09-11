@@ -17,6 +17,67 @@ A baby poop tracking app built with Flutter + Firebase. Track consistency, view 
 
 ## Setup
 
+### Android APK pipeline
+
+The **Android APK checks and releases** workflow is independent of web deployment.
+PRs run the tests and compile a signed release APK using placeholder Firebase
+settings and an ephemeral CI certificate. Those PR builds are not published.
+After each successful build of merged `main`, a production-signed APK and its
+SHA-256 checksum are attached to a new GitHub Release. Download the `.apk` from
+the repository's Releases page and install it on your phone. No Play Store
+account is required, and publishing does not automatically update installed apps.
+
+The readable version comes from `pubspec.yaml` (starting at **1.3.0**, following
+the existing 1.2.x releases). Android's numeric version code is
+**100000 + this workflow's run number**. Each new run therefore has a higher
+build number, including gaps caused by PR checks. Reruns retain the same number
+and do not overwrite an existing release. Tags and filenames include both,
+for example `android-v1.3.0-build.100007`. Do not delete/recreate this workflow or
+change its counter scheme without preserving monotonically increasing codes.
+
+Production builds require these repository Actions secrets:
+
+| Secret | Contents |
+| --- | --- |
+| `FIREBASE_OPTIONS_DART` | Existing configured Dart Firebase options |
+| `ANDROID_GOOGLE_SERVICES_JSON` | Firebase Android `google-services.json` |
+| `ANDROID_KEYSTORE_BASE64` | Base64-encoded PKCS12 release keystore |
+| `ANDROID_SIGNING_PASSWORD` | Keystore and key password (same value) |
+
+The release key alias is `potty-tracker`. Missing secrets fail the production
+build. Release builds never fall back to a debug signing key. Signing files are
+ignored by Git and must not be committed. Keep a separate secure backup of the
+keystore **and its password**: losing them prevents updates signed with this key.
+
+This introduces a new release certificate. Uninstall the old debug-signed APK
+once before installing the first new release. Future APKs use this stable key
+and can update each other. Only cloud-synced diary entries survive reinstalling;
+any unsynced local data may be lost.
+
+For Google sign-in, register the release certificate's SHA-1 (and SHA-256) under
+Firebase Project settings > Android app > SHA certificate fingerprints, then
+download updated `google-services.json` and update its Actions secret. An APK
+build passing does not verify real-device sign-in.
+
+For a local signed release, create ignored `android/key.properties`:
+
+```properties
+storeFile=/absolute/path/to/release-v1.p12
+storePassword=YOUR_PASSWORD
+keyPassword=YOUR_PASSWORD
+keyAlias=potty-tracker
+```
+
+Then build with an explicit version code higher than any APK it must update:
+
+```bash
+flutter build apk --release --build-name 1.3.0 --build-number 100007
+```
+
+The pipeline verifies the APK signature, package ID, version code, launch
+activity and internet permission. Device installation and authentication still
+need a real-phone smoke test. Failed Android builds do not block web deployment.
+
 ### Prerequisites
 - Flutter SDK 3.27+
 - Firebase project with Firestore + Authentication enabled

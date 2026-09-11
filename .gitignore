@@ -17,6 +17,10 @@ android/local.properties
 android/gradlew
 android/gradlew.bat
 android/gradle/
+android/key.properties
+.android-signing/
+*.jks
+*.keystore
 
 # iOS
 ios/Flutter/.last_build_id
