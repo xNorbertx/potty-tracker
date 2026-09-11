@@ -4,11 +4,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AuthService {
   final FirebaseAuth _auth;
-  final GoogleSignIn _googleSignIn;
+  final GoogleSignIn? _googleSignIn;
 
   AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
       : _auth = auth ?? FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+        // Web authentication uses Firebase popups, not the native Google plugin.
+        _googleSignIn = kIsWeb ? null : (googleSignIn ?? GoogleSignIn());
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -38,7 +39,7 @@ class AuthService {
       final googleProvider = GoogleAuthProvider();
       return await _auth.signInWithPopup(googleProvider);
     } else {
-      final googleUser = await _googleSignIn.signIn();
+      final googleUser = await _googleSignIn!.signIn();
       if (googleUser == null) return null;
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -62,7 +63,7 @@ class AuthService {
   Future<void> signOut() async {
     await Future.wait([
       _auth.signOut(),
-      if (!kIsWeb) _googleSignIn.signOut(),
+      if (!kIsWeb) _googleSignIn!.signOut(),
     ]);
   }
 }
