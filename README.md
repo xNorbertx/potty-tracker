@@ -15,6 +15,40 @@ A baby poop tracking app built with Flutter + Firebase. Track consistency, view 
 **Web:** https://xnorbertx.github.io/potty-tracker/
 **Android APK:** https://github.com/xNorbertx/potty-tracker/releases/latest
 
+## Pull requests and automatic web deployment
+
+Work on a feature branch and open a PR against `main`. The **Web checks and
+deployment** workflow runs the existing tests and compiles a release web build
+for each PR. PR checks use the example Firebase configuration and never deploy.
+The browser-only authentication test is skipped by the standard test command;
+the workflow does not claim browser integration-test coverage.
+
+After a PR is merged into `main`, the workflow tests again, builds with the
+production Firebase configuration, and publishes to GitHub Pages. A merge starts
+the process; the site changes only when the deployment job succeeds. A failed
+test or build prevents that run from deploying. Check the repository's Actions
+tab or the `github-pages` deployment for progress and errors.
+
+One-time repository configuration:
+
+- Set the repository Actions secret `FIREBASE_OPTIONS_DART` to the contents of
+  the configured local `lib/firebase_options.dart`. Keep that file out of Git.
+- Under Settings > Pages, choose **GitHub Actions** as the publishing source.
+- Allow branch `main` to deploy to the `github-pages` environment.
+
+The workflow uses Flutter 3.27.4 and the committed dependency lockfile. Production
+builds fail if the Firebase secret is missing. Firebase client settings are
+necessarily embedded in the published web app; this is not a service-account
+credential. Firebase security rules still control access to stored data.
+
+After deployment, `/potty-tracker/version.txt` contains the deployed commit SHA.
+Reload the app on your phone to pick up a new version. You can manually rerun the
+workflow on `main` from Actions. To roll back, revert the problematic PR through
+a new PR and merge it; the same pipeline then publishes the reverted code.
+
+This pipeline deploys the web app only. It does not release Android APKs or
+change Firebase Authentication settings, Firestore rules, or database contents.
+
 ## Setup
 
 ### Prerequisites
