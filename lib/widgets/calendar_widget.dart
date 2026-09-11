@@ -72,69 +72,26 @@ class CalendarWidget extends StatelessWidget {
             ),
           ),
           calendarBuilders: CalendarBuilders(
-            markerBuilder: (context, day, events) {
-              if (events.isEmpty) return const SizedBox.shrink();
-              final count = events.length;
-              final dotCount = count > 3 ? 3 : count;
-              final overflow = count - dotCount;
-              final bool isSelectedDay =
-                  selectedDay != null && isSameDay(day, selectedDay);
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ...List.generate(
-                      dotCount,
-                      (_) => Container(
-                        width: 5,
-                        height: 5,
-                        margin: const EdgeInsets.symmetric(horizontal: 0.5),
-                        decoration: BoxDecoration(
-                          color: isSelectedDay
-                              ? Colors.white
-                              : const Color(0xFF8D6E63),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                    if (overflow > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 1),
-                        child: Text(
-                          '+$overflow',
-                          style: TextStyle(
-                            fontSize: 6,
-                            color: isSelectedDay
-                                ? Colors.white
-                                : const Color(0xFF4CAF50),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
             defaultBuilder: (ctx, day, focused) => _DayCell(
               day: day,
               isSelected: false,
               isToday: false,
               isWeekend: day.weekday >= 6,
+              entryCount: _getEntriesForDay(day).length,
             ),
             selectedBuilder: (ctx, day, focused) => _DayCell(
               day: day,
               isSelected: true,
               isToday: isSameDay(day, DateTime.now()),
               isWeekend: day.weekday >= 6,
+              entryCount: _getEntriesForDay(day).length,
             ),
             todayBuilder: (ctx, day, focused) => _DayCell(
               day: day,
               isSelected: isSameDay(selectedDay, day),
               isToday: true,
               isWeekend: day.weekday >= 6,
+              entryCount: _getEntriesForDay(day).length,
             ),
             outsideBuilder: (ctx, day, focused) => _DayCell(
               day: day,
@@ -142,6 +99,7 @@ class CalendarWidget extends StatelessWidget {
               isToday: false,
               isWeekend: day.weekday >= 6,
               isOutside: true,
+              entryCount: _getEntriesForDay(day).length,
             ),
           ),
         ),
@@ -156,12 +114,14 @@ class _DayCell extends StatelessWidget {
   final bool isToday;
   final bool isWeekend;
   final bool isOutside;
+  final int entryCount;
 
   const _DayCell({
     required this.day,
     required this.isSelected,
     required this.isToday,
     required this.isWeekend,
+    required this.entryCount,
     this.isOutside = false,
   });
 
@@ -198,15 +158,82 @@ class _DayCell extends StatelessWidget {
               ? Border.all(color: const Color(0xFF4CAF50), width: 1.5)
               : null,
         ),
-        alignment: Alignment.center,
-        child: Text(
-          '${day.day}',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: numberWeight,
-            color: numberColor,
-            height: 1.0,
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '${day.day}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: numberWeight,
+                color: numberColor,
+                height: 1.0,
+              ),
+            ),
+            if (entryCount > 0)
+              _EventMarker(
+                day: day,
+                entryCount: entryCount,
+                isSelected: isSelected,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EventMarker extends StatelessWidget {
+  final DateTime day;
+  final int entryCount;
+  final bool isSelected;
+
+  const _EventMarker({
+    required this.day,
+    required this.entryCount,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dotCount = entryCount > 3 ? 3 : entryCount;
+    final overflow = entryCount - dotCount;
+    final markerColor = isSelected ? Colors.white : const Color(0xFF8D6E63);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Semantics(
+        label: '$entryCount entries',
+        child: Row(
+          key: ValueKey('event-marker-${DateUtils.dateOnly(day)}'),
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...List.generate(
+              dotCount,
+              (_) => Container(
+                width: 5,
+                height: 5,
+                margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                decoration: BoxDecoration(
+                  color: markerColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            if (overflow > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 1),
+                child: Text(
+                  '+$overflow',
+                  style: TextStyle(
+                    fontSize: 6,
+                    color: markerColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
