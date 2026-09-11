@@ -72,6 +72,9 @@ class CalendarWidget extends StatelessWidget {
             ),
           ),
           calendarBuilders: CalendarBuilders(
+            // Markers are drawn inside _DayCell so they remain visible when
+            // the cell is selected. Suppress TableCalendar's default markers.
+            markerBuilder: (_, __, ___) => const SizedBox.shrink(),
             defaultBuilder: (ctx, day, focused) => _DayCell(
               day: day,
               isSelected: false,
