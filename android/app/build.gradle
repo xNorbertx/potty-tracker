@@ -5,9 +5,15 @@ plugins {
     id "com.google.gms.google-services"
 }
 
+def signingProperties = new Properties()
+def signingPropertiesFile = rootProject.file('key.properties')
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.withInputStream { signingProperties.load(it) }
+}
+
 android {
     namespace = "com.xnorbertx.pottytracker"
-    compileSdk = 34
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -27,10 +33,30 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            if (signingPropertiesFile.exists()) {
+                keyAlias = signingProperties['keyAlias']
+                keyPassword = signingProperties['keyPassword']
+                storeFile = rootProject.file(signingProperties['storeFile'])
+                storePassword = signingProperties['storePassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
+            signingConfig = signingConfigs.release
         }
+    }
+}
+
+// Never silently publish a release using a temporary debug certificate.
+gradle.taskGraph.whenReady { graph ->
+    if (!signingPropertiesFile.exists() && graph.allTasks.any {
+        it.project == project && it.name.toLowerCase().contains('release')
+    }) {
+        throw new GradleException('Release signing requires android/key.properties. See README.md.')
     }
 }
 
