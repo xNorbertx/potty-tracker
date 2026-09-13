@@ -1,11 +1,11 @@
 {
-    "name": "potty_tracker",
-    "short_name": "potty_tracker",
+    "name": "Potty Tracker",
+    "short_name": "Potty Tracker",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFF8F0",
+    "theme_color": "#8B4513",
+    "description": "A simple tracker for your baby's bowel movements.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
