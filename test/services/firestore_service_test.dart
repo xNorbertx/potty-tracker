@@ -53,9 +53,32 @@ void main() {
       expect(joined!.memberUids, containsAll(['user1', 'user2']));
     });
 
+    test('joinBabyWithCode ignores casing and surrounding whitespace', () async {
+      final baby = await service.addBaby('user1', 'Charlie');
+
+      final joined = await service.joinBabyWithCode(
+        'user2',
+        '  ${baby.shareCode.toLowerCase()}  ',
+      );
+
+      expect(joined?.id, baby.id);
+      expect(joined?.memberUids, contains('user2'));
+    });
+
     test('joinBabyWithCode returns null for invalid code', () async {
       final result = await service.joinBabyWithCode('user2', 'XXXXXX');
       expect(result, isNull);
+    });
+
+    test('updateBabyName updates only the requested baby', () async {
+      final first = await service.addBaby('user1', 'Alice');
+      final second = await service.addBaby('user1', 'Bea');
+
+      await service.updateBabyName(first.id, 'Alicia');
+      final babies = await service.babiesStream('user1').first;
+
+      expect(babies.singleWhere((baby) => baby.id == first.id).name, 'Alicia');
+      expect(babies.singleWhere((baby) => baby.id == second.id).name, 'Bea');
     });
   });
 
@@ -85,6 +108,26 @@ void main() {
       );
 
       expect(entry.notes, 'Yellow and mushy');
+    });
+
+    test('addEntry persists optional size, colour and logging user', () async {
+      final baby = await service.addBaby('user1', 'Alice');
+      final entry = await service.addEntry(
+        uid: 'user1',
+        babyId: baby.id,
+        timestamp: DateTime(2024, 6, 15, 10),
+        consistency: Consistency.soft,
+      );
+
+      final saved = await fakeFirestore
+          .collection('babies')
+          .doc(baby.id)
+          .collection('entries')
+          .doc(entry.id)
+          .get();
+      expect(saved.data()?['loggedBy'], 'user1');
+      expect(saved.data(), isNot(contains('size')));
+      expect(saved.data(), isNot(contains('color')));
     });
 
     test('entriesStream emits entries for baby', () async {
