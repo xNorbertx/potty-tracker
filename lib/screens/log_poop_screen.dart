@@ -10,6 +10,7 @@ import '../services/firestore_service.dart';
 import '../widgets/consistency_selector.dart';
 import '../widgets/size_selector.dart';
 import '../widgets/poop_color_selector.dart';
+import '../widgets/app_status.dart';
 
 class LogPoopScreen extends StatefulWidget {
   final Baby baby;
@@ -122,7 +123,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving: $e'),
+          content: Text(friendlyError(e)),
           backgroundColor: Colors.red.shade400,
         ),
       );

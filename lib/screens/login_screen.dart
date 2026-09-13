@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../widgets/app_status.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_friendlyError(e.toString())),
+          content: Text(friendlyError(e)),
           backgroundColor: Colors.red.shade400,
         ),
       );
@@ -70,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Google sign-in failed: ${_friendlyError(e.toString())}'),
+          content: Text('Google sign-in failed: ${friendlyError(e)}'),
           backgroundColor: Colors.red.shade400,
         ),
       );
@@ -91,34 +92,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Microsoft sign-in failed: ${_friendlyError(e.toString())}'),
+          content: Text('Microsoft sign-in failed: ${friendlyError(e)}'),
           backgroundColor: Colors.red.shade400,
         ),
       );
     } finally {
       if (mounted) setState(() => _microsoftLoading = false);
     }
-  }
-
-  String _friendlyError(String raw) {
-    if (raw.contains('user-not-found') ||
-        raw.contains('wrong-password') ||
-        raw.contains('invalid-credential')) {
-      return 'Invalid email or password.';
-    }
-    if (raw.contains('email-already-in-use')) {
-      return 'An account with this email already exists.';
-    }
-    if (raw.contains('weak-password')) {
-      return 'Password must be at least 6 characters.';
-    }
-    if (raw.contains('invalid-email')) {
-      return 'Please enter a valid email address.';
-    }
-    if (raw.contains('cancelled') || raw.contains('canceled')) {
-      return 'Sign-in cancelled.';
-    }
-    return 'Something went wrong. Please try again.';
   }
 
   @override
@@ -170,9 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           )
                         : const _GoogleLogo(),
                     label: Text(
-                      _googleLoading
-                          ? 'Signing in...'
-                          : 'Continue with Google',
+                      _googleLoading ? 'Signing in...' : 'Continue with Google',
                       style: const TextStyle(
                         fontSize: 15,
                         color: Colors.black87,
@@ -273,8 +251,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 icon: Icon(_obscurePassword
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined),
-                                onPressed: () => setState(() =>
-                                    _obscurePassword = !_obscurePassword),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
                               ),
                             ),
                             validator: (v) {
@@ -291,8 +269,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed:
-                                  (_loading || _googleLoading || _microsoftLoading) ? null : _submit,
+                              onPressed: (_loading ||
+                                      _googleLoading ||
+                                      _microsoftLoading)
+                                  ? null
+                                  : _submit,
                               child: _loading
                                   ? const SizedBox(
                                       height: 20,
@@ -302,9 +283,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : Text(_isLogin
-                                      ? 'Sign In'
-                                      : 'Create Account'),
+                                  : Text(
+                                      _isLogin ? 'Sign In' : 'Create Account'),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -315,8 +295,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               _isLogin
                                   ? "Don't have an account? Register"
                                   : 'Already have an account? Sign in',
-                              style: const TextStyle(
-                                  color: Color(0xFF4CAF50)),
+                              style: const TextStyle(color: Color(0xFF4CAF50)),
                             ),
                           ),
                         ],
@@ -356,10 +335,10 @@ class _MicrosoftLogoPainter extends CustomPainter {
     final sq = half - gap;
 
     final rects = [
-      Rect.fromLTWH(0, 0, sq, sq),                         // top-left: red
-      Rect.fromLTWH(half, 0, sq, sq),                      // top-right: green
-      Rect.fromLTWH(0, half, sq, sq),                      // bottom-left: blue
-      Rect.fromLTWH(half, half, sq, sq),                   // bottom-right: yellow
+      Rect.fromLTWH(0, 0, sq, sq), // top-left: red
+      Rect.fromLTWH(half, 0, sq, sq), // top-right: green
+      Rect.fromLTWH(0, half, sq, sq), // bottom-left: blue
+      Rect.fromLTWH(half, half, sq, sq), // bottom-right: yellow
     ];
     final colors = [
       const Color(0xFFF25022),
@@ -401,7 +380,9 @@ class _GoogleLogoPainter extends CustomPainter {
     // Blue arc
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -1.4, 2.8, false,
+      -1.4,
+      2.8,
+      false,
       Paint()
         ..color = const Color(0xFF4285F4)
         ..style = PaintingStyle.stroke
@@ -410,7 +391,9 @@ class _GoogleLogoPainter extends CustomPainter {
     // Red arc
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      1.4, 1.6, false,
+      1.4,
+      1.6,
+      false,
       Paint()
         ..color = const Color(0xFFEA4335)
         ..style = PaintingStyle.stroke
@@ -419,7 +402,9 @@ class _GoogleLogoPainter extends CustomPainter {
     // Yellow arc
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -3.3, 1.6, false,
+      -3.3,
+      1.6,
+      false,
       Paint()
         ..color = const Color(0xFFFBBC05)
         ..style = PaintingStyle.stroke
@@ -428,7 +413,9 @@ class _GoogleLogoPainter extends CustomPainter {
     // Green arc
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -1.8, 0.5, false,
+      -1.8,
+      0.5,
+      false,
       Paint()
         ..color = const Color(0xFF34A853)
         ..style = PaintingStyle.stroke

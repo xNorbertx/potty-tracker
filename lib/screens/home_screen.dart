@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/calendar_widget.dart';
 import '../widgets/poop_entry_tile.dart';
+import '../widgets/app_status.dart';
 import 'log_poop_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -73,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Error: $e'),
+                    content: Text(friendlyError(e)),
                     backgroundColor: Colors.red.shade400,
                   ),
                 );
@@ -152,7 +153,9 @@ class _HomeScreenState extends State<HomeScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacementNamed(context, '/login');
       });
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: AppLoadingView(message: 'Checking your account...'),
+      );
     }
 
     return StreamBuilder<List<Baby>>(
@@ -162,7 +165,16 @@ class _HomeScreenState extends State<HomeScreen> {
         if (babySnap.connectionState == ConnectionState.waiting &&
             babySnap.data == null) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: AppLoadingView(message: 'Loading your diary...'),
+          );
+        }
+
+        if (babySnap.hasError && babySnap.data == null) {
+          return Scaffold(
+            body: AppErrorView(
+              message: friendlyError(babySnap.error!),
+              onRetry: () => setState(() {}),
+            ),
           );
         }
 
@@ -179,6 +191,27 @@ class _HomeScreenState extends State<HomeScreen> {
         return StreamBuilder<List<PoopEntry>>(
           stream: entriesStream,
           builder: (context, entrySnap) {
+            if (entrySnap.connectionState == ConnectionState.waiting &&
+                entrySnap.data == null) {
+              return Scaffold(
+                appBar: AppBar(title: Text('👶 ${baby.name}\'s Poop Diary 💩')),
+                body: const AppLoadingView(message: 'Loading poop entries...'),
+              );
+            }
+
+            if (entrySnap.hasError && entrySnap.data == null) {
+              return Scaffold(
+                appBar: AppBar(title: Text('👶 ${baby.name}\'s Poop Diary 💩')),
+                body: AppErrorView(
+                  message: friendlyError(entrySnap.error!),
+                  onRetry: () => setState(() {
+                    _entriesStream = null;
+                    _cachedBabyId = null;
+                  }),
+                ),
+              );
+            }
+
             final entries = entrySnap.data ?? [];
 
             final dayEntries = entries
@@ -299,7 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     if (!mounted) return;
                                     messenger.showSnackBar(
                                       SnackBar(
-                                        content: Text('Error deleting: $e'),
+                                        content: Text(friendlyError(e)),
                                         backgroundColor: Colors.red.shade400,
                                       ),
                                     );
@@ -398,7 +431,7 @@ class _SetupScreenState extends State<_SetupScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving baby: $e'),
+          content: Text(friendlyError(e)),
           backgroundColor: Colors.red.shade400,
         ),
       );
@@ -432,7 +465,7 @@ class _SetupScreenState extends State<_SetupScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error joining baby: $e'),
+          content: Text(friendlyError(e)),
           backgroundColor: Colors.red.shade400,
         ),
       );

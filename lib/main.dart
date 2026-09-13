@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
+import 'services/connection_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'widgets/app_status.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +28,7 @@ class PottyTrackerApp extends StatelessWidget {
       providers: [
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<FirestoreService>(create: (_) => FirestoreService()),
+        Provider<ConnectionService>(create: (_) => ConnectionService()),
       ],
       child: MaterialApp(
         title: 'Potty Tracker',
@@ -37,6 +40,9 @@ class PottyTrackerApp extends StatelessWidget {
           '/login': (_) => const LoginScreen(),
           '/home': (_) => const HomeScreen(),
         },
+        builder: (context, child) => ConnectionStatusBanner(
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
     );
   }
