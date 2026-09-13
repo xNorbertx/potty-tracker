@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:potty_tracker/models/consistency.dart';
+import 'package:potty_tracker/models/poop_color.dart';
+import 'package:potty_tracker/models/poop_size.dart';
 import 'package:potty_tracker/services/firestore_service.dart';
 
 void main() {
@@ -46,14 +48,14 @@ void main() {
 
     test('joinBabyWithCode adds user to memberUids', () async {
       final baby = await service.addBaby('user1', 'Charlie');
-      final joined =
-          await service.joinBabyWithCode('user2', baby.shareCode);
+      final joined = await service.joinBabyWithCode('user2', baby.shareCode);
 
       expect(joined, isNotNull);
       expect(joined!.memberUids, containsAll(['user1', 'user2']));
     });
 
-    test('joinBabyWithCode ignores casing and surrounding whitespace', () async {
+    test('joinBabyWithCode ignores casing and surrounding whitespace',
+        () async {
       final baby = await service.addBaby('user1', 'Charlie');
 
       final joined = await service.joinBabyWithCode(
@@ -156,6 +158,36 @@ void main() {
       await service.deleteEntry(baby.id, entry.id);
       final entries = await service.entriesStream(baby.id).first;
       expect(entries, isEmpty);
+    });
+
+    test('updateEntry changes editable fields and clears removed options',
+        () async {
+      final baby = await service.addBaby('user1', 'Alice');
+      final entry = await service.addEntry(
+        uid: 'user1',
+        babyId: baby.id,
+        timestamp: DateTime(2024, 6, 15, 9),
+        consistency: Consistency.soft,
+        size: PoopSize.large,
+        color: PoopColor.brown,
+        notes: 'Original note',
+      );
+
+      await service.updateEntry(
+        babyId: baby.id,
+        entryId: entry.id,
+        timestamp: DateTime(2024, 6, 16, 10, 30),
+        consistency: Consistency.watery,
+      );
+
+      final updated = (await service.entriesStream(baby.id).first).single;
+      expect(updated.id, entry.id);
+      expect(updated.timestamp, DateTime(2024, 6, 16, 10, 30));
+      expect(updated.consistency, Consistency.watery);
+      expect(updated.size, isNull);
+      expect(updated.color, isNull);
+      expect(updated.notes, isNull);
+      expect(updated.loggedBy, 'user1');
     });
 
     test('multiple entries are returned ordered by timestamp desc', () async {

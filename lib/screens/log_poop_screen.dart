@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/consistency.dart';
 import '../models/poop_size.dart';
 import '../models/poop_color.dart';
+import '../models/poop_entry.dart';
 import '../models/baby.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -15,8 +16,14 @@ import '../widgets/app_status.dart';
 class LogPoopScreen extends StatefulWidget {
   final Baby baby;
   final DateTime? initialDate;
+  final PoopEntry? entry;
 
-  const LogPoopScreen({super.key, required this.baby, this.initialDate});
+  const LogPoopScreen({
+    super.key,
+    required this.baby,
+    this.initialDate,
+    this.entry,
+  });
 
   @override
   State<LogPoopScreen> createState() => _LogPoopScreenState();
@@ -30,19 +37,30 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   final _notesCtrl = TextEditingController();
   bool _loading = false;
 
+  bool get _isEditing => widget.entry != null;
+
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    final base = widget.initialDate ?? now;
-    // Use the selected day but always current time
-    _selectedDateTime = DateTime(
-      base.year,
-      base.month,
-      base.day,
-      now.hour,
-      now.minute,
-    );
+    if (_isEditing) {
+      final entry = widget.entry!;
+      _selectedDateTime = entry.timestamp;
+      _selectedConsistency = entry.consistency;
+      _selectedSize = entry.size;
+      _selectedColor = entry.color;
+      _notesCtrl.text = entry.notes ?? '';
+    } else {
+      final now = DateTime.now();
+      final base = widget.initialDate ?? now;
+      // Use the selected day but always current time.
+      _selectedDateTime = DateTime(
+        base.year,
+        base.month,
+        base.day,
+        now.hour,
+        now.minute,
+      );
+    }
   }
 
   @override
@@ -100,22 +118,38 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
 
     setState(() => _loading = true);
     try {
-      final auth = context.read<AuthService>();
       final firestore = context.read<FirestoreService>();
-      await firestore.addEntry(
-        uid: auth.currentUserId!,
-        babyId: widget.baby.id,
-        timestamp: _selectedDateTime,
-        consistency: _selectedConsistency!,
-        size: _selectedSize,
-        color: _selectedColor,
-        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-      );
+      final notes =
+          _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim();
+      if (_isEditing) {
+        await firestore.updateEntry(
+          babyId: widget.baby.id,
+          entryId: widget.entry!.id,
+          timestamp: _selectedDateTime,
+          consistency: _selectedConsistency!,
+          size: _selectedSize,
+          color: _selectedColor,
+          notes: notes,
+        );
+      } else {
+        final auth = context.read<AuthService>();
+        await firestore.addEntry(
+          uid: auth.currentUserId!,
+          babyId: widget.baby.id,
+          timestamp: _selectedDateTime,
+          consistency: _selectedConsistency!,
+          size: _selectedSize,
+          color: _selectedColor,
+          notes: notes,
+        );
+      }
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('💩 Poop logged successfully!'),
+        SnackBar(
+          content: Text(_isEditing
+              ? '💩 Poop entry updated!'
+              : '💩 Poop logged successfully!'),
           backgroundColor: Color(0xFF4CAF50),
         ),
       );
@@ -136,7 +170,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Log a Poop 💩'),
+        title: Text(_isEditing ? 'Edit Poop Log 💩' : 'Log a Poop 💩'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -239,7 +273,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : const Text('Save Entry 💾'),
+                    : Text(_isEditing ? 'Save Changes 💾' : 'Save Entry 💾'),
               ),
             ),
           ],

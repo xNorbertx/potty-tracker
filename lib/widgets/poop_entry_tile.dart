@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import '../models/poop_entry.dart';
 import '../models/consistency.dart';
@@ -8,49 +9,39 @@ import '../models/poop_color.dart';
 class PoopEntryTile extends StatelessWidget {
   final PoopEntry entry;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   const PoopEntryTile({
     super.key,
     required this.entry,
     required this.onDelete,
+    required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Dismissible(
+    return Slidable(
       key: Key(entry.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
-      ),
-      onDismissed: (_) => onDelete(),
-      confirmDismiss: (_) async {
-        return await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Delete entry?'),
-            content:
-                const Text('This will permanently delete this poop entry.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child:
-                    const Text('Delete', style: TextStyle(color: Colors.red)),
-              ),
-            ],
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.45,
+        children: [
+          SlidableAction(
+            onPressed: (_) => onEdit(),
+            backgroundColor: const Color(0xFF42A5F5),
+            foregroundColor: Colors.white,
+            icon: Icons.edit_outlined,
+            label: 'Edit',
           ),
-        );
-      },
+          SlidableAction(
+            onPressed: (_) => _confirmDelete(context),
+            backgroundColor: const Color(0xFFEF5350),
+            foregroundColor: Colors.white,
+            icon: Icons.delete_outline,
+            label: 'Delete',
+          ),
+        ],
+      ),
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
         child: ListTile(
@@ -132,7 +123,7 @@ class PoopEntryTile extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               const Text(
-                'swipe to delete',
+                'swipe for actions',
                 style: TextStyle(fontSize: 10, color: Colors.grey),
               ),
             ],
@@ -140,5 +131,26 @@ class PoopEntryTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete entry?'),
+        content: const Text('This will permanently delete this poop entry.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) onDelete();
   }
 }

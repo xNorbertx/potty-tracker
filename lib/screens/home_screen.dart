@@ -322,6 +322,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               itemCount: dayEntries.length,
                               itemBuilder: (ctx, i) => PoopEntryTile(
                                 entry: dayEntries[i],
+                                onEdit: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => LogPoopScreen(
+                                        baby: baby,
+                                        entry: dayEntries[i],
+                                      ),
+                                    ),
+                                  );
+                                },
                                 onDelete: () async {
                                   final messenger =
                                       ScaffoldMessenger.of(context);
