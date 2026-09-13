@@ -18,8 +18,14 @@ void main() {
     createdAt: DateTime(2024, 6, 15),
   );
 
-  Widget app(VoidCallback onDelete) => MaterialApp(
-        home: Scaffold(body: PoopEntryTile(entry: entry, onDelete: onDelete)),
+  Widget app(VoidCallback onDelete, {VoidCallback? onEdit}) => MaterialApp(
+        home: Scaffold(
+          body: PoopEntryTile(
+            entry: entry,
+            onDelete: onDelete,
+            onEdit: onEdit ?? () {},
+          ),
+        ),
       );
 
   testWidgets('shows entry details', (tester) async {
@@ -37,7 +43,7 @@ void main() {
 
     await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Delete entry?'), findsOneWidget);
+    expect(find.text('Edit or delete entry?'), findsOneWidget);
 
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
@@ -48,5 +54,20 @@ void main() {
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(deletes, 1);
+  });
+
+  testWidgets('opens editing without deleting the entry', (tester) async {
+    var edits = 0;
+    var deletes = 0;
+    await tester.pumpWidget(app(() => deletes++, onEdit: () => edits++));
+
+    await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    expect(edits, 1);
+    expect(deletes, 0);
+    expect(find.byType(Dismissible), findsOneWidget);
   });
 }

@@ -121,4 +121,22 @@ class FirestoreService {
   Future<void> deleteEntry(String babyId, String entryId) async {
     await _entriesRef(babyId).doc(entryId).delete();
   }
+
+  Future<void> updateEntry({
+    required String babyId,
+    required String entryId,
+    required DateTime timestamp,
+    required Consistency consistency,
+    PoopSize? size,
+    PoopColor? color,
+    String? notes,
+  }) async {
+    await _entriesRef(babyId).doc(entryId).update({
+      'timestamp': Timestamp.fromDate(timestamp),
+      'consistency': consistency.value,
+      'size': size?.value ?? FieldValue.delete(),
+      'color': color?.value ?? FieldValue.delete(),
+      'notes': notes ?? FieldValue.delete(),
+    });
+  }
 }

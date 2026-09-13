@@ -8,11 +8,13 @@ import '../models/poop_color.dart';
 class PoopEntryTile extends StatelessWidget {
   final PoopEntry entry;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   const PoopEntryTile({
     super.key,
     required this.entry,
     required this.onDelete,
+    required this.onEdit,
   });
 
   @override
@@ -31,25 +33,35 @@ class PoopEntryTile extends StatelessWidget {
       ),
       onDismissed: (_) => onDelete(),
       confirmDismiss: (_) async {
-        return await showDialog<bool>(
+        final action = await showDialog<_EntryAction>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Delete entry?'),
-            content:
-                const Text('This will permanently delete this poop entry.'),
+            title: const Text('Edit or delete entry?'),
+            content: const Text(
+                'You can change this entry or permanently delete it.'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
+                onPressed: () => Navigator.pop(ctx),
                 child: const Text('Cancel'),
               ),
+              TextButton.icon(
+                onPressed: () => Navigator.pop(ctx, _EntryAction.edit),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Edit'),
+              ),
               TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
+                onPressed: () => Navigator.pop(ctx, _EntryAction.delete),
                 child:
                     const Text('Delete', style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
         );
+        if (action == _EntryAction.edit) {
+          onEdit();
+          return false;
+        }
+        return action == _EntryAction.delete;
       },
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
@@ -132,7 +144,7 @@ class PoopEntryTile extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               const Text(
-                'swipe to delete',
+                'swipe to edit or delete',
                 style: TextStyle(fontSize: 10, color: Colors.grey),
               ),
             ],
@@ -142,3 +154,5 @@ class PoopEntryTile extends StatelessWidget {
     );
   }
 }
+
+enum _EntryAction { edit, delete }
