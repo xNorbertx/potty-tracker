@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:potty_tracker/models/consistency.dart';
 import 'package:potty_tracker/models/poop_color.dart';
@@ -36,22 +37,28 @@ void main() {
     expect(find.text('09:05'), findsOneWidget);
   });
 
-  testWidgets('asks before deletion and only deletes after confirmation',
+  testWidgets('reveals edit and delete buttons, and confirms deletion',
       (tester) async {
     var deletes = 0;
     await tester.pumpWidget(app(() => deletes++));
 
-    await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+    await tester.drag(find.byType(Slidable), const Offset(-500, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Edit or delete entry?'), findsOneWidget);
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Delete'), findsOneWidget);
 
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete entry?'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(deletes, 0);
 
-    await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+    await tester.drag(find.byType(Slidable), const Offset(-500, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();
     expect(deletes, 1);
   });
@@ -61,13 +68,13 @@ void main() {
     var deletes = 0;
     await tester.pumpWidget(app(() => deletes++, onEdit: () => edits++));
 
-    await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+    await tester.drag(find.byType(Slidable), const Offset(-500, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
 
     expect(edits, 1);
     expect(deletes, 0);
-    expect(find.byType(Dismissible), findsOneWidget);
+    expect(find.byType(Slidable), findsOneWidget);
   });
 }
