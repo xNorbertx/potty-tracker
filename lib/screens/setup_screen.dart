@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../widgets/app_status.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -36,7 +37,7 @@ class _SetupScreenState extends State<SetupScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving baby: $e'),
+          content: Text(friendlyError(e)),
           backgroundColor: Colors.red.shade400,
         ),
       );
