@@ -30,7 +30,11 @@ class _SetupScreenState extends State<SetupScreen> {
       final auth = context.read<AuthService>();
       final firestore = context.read<FirestoreService>();
       final uid = auth.currentUserId!;
-      await firestore.addBaby(uid, _nameCtrl.text.trim());
+      await firestore.addBaby(
+        uid,
+        _nameCtrl.text.trim(),
+        caregiverLabel: auth.currentUserEmail,
+      );
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {

@@ -6,6 +6,7 @@ import '../models/baby.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
+import 'baby_overview_screen.dart';
 
 class BabySettingsScreen extends StatefulWidget {
   final List<Baby> babies;
@@ -121,9 +122,12 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
               final uid = context.read<AuthService>().currentUserId;
               if (uid == null) return;
               try {
-                final baby = await context
-                    .read<FirestoreService>()
-                    .addBaby(uid, controller.text.trim());
+                final baby = await context.read<FirestoreService>().addBaby(
+                      uid,
+                      controller.text.trim(),
+                      caregiverLabel:
+                          context.read<AuthService>().currentUserEmail,
+                    );
                 if (!mounted || !dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
                 setState(() => _babies = [..._babies, baby]);
@@ -231,11 +235,18 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
                   child: ListTile(
                     leading: const CircleAvatar(child: Text('👶')),
                     title: Text(baby.name),
-                    subtitle: baby.id == widget.selectedBabyId
-                        ? const Text('Current diary')
-                        : const Text('Open this diary'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.pop(context, baby.id),
+                    onTap: () async {
+                      final selectedBabyId =
+                          await Navigator.of(context).push<String>(
+                        MaterialPageRoute(
+                          builder: (_) => BabyOverviewScreen(baby: baby),
+                        ),
+                      );
+                      if (selectedBabyId != null && context.mounted) {
+                        Navigator.pop(context, selectedBabyId);
+                      }
+                    },
                   ),
                 ),
               ),

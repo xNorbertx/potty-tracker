@@ -17,6 +17,8 @@ class AuthService {
 
   String? get currentUserId => _auth.currentUser?.uid;
 
+  String? get currentUserEmail => _auth.currentUser?.email;
+
   bool get hasPasswordProvider =>
       _auth.currentUser?.providerData.any(
           (provider) => provider.providerId == EmailAuthProvider.PROVIDER_ID) ??

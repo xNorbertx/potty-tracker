@@ -376,8 +376,11 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
               if (!formKey.currentState!.validate()) return;
               setState(() => _addingBaby = true);
               try {
-                await widget.firestore
-                    .addBaby(widget.uid, controller.text.trim());
+                await widget.firestore.addBaby(
+                  widget.uid,
+                  controller.text.trim(),
+                  caregiverLabel: widget.auth.currentUserEmail,
+                );
                 if (!mounted || !dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
               } catch (error) {
@@ -393,6 +396,72 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
               }
             },
             child: const Text('Add baby'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+  }
+
+  Future<void> _showJoinBabyDialog() async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Join a shared baby'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 6,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              labelText: 'Invite code',
+              hintText: 'ABC123',
+            ),
+            validator: (value) => value == null || value.trim().length != 6
+                ? 'Enter the 6-character invite code'
+                : null,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              try {
+                final baby = await widget.firestore.joinBabyWithCode(
+                  widget.uid,
+                  controller.text,
+                  caregiverLabel: widget.auth.currentUserEmail,
+                );
+                if (!mounted || !dialogContext.mounted) return;
+                if (baby == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Invite code not found.'),
+                      backgroundColor: Colors.red.shade400,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext);
+              } catch (error) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(friendlyError(error)),
+                    backgroundColor: Colors.red.shade400,
+                  ),
+                );
+              }
+            },
+            child: const Text('Join baby'),
           ),
         ],
       ),
@@ -479,6 +548,11 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
                         )
                       : const Icon(Icons.add),
                   label: const Text('Add a baby'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: _addingBaby ? null : _showJoinBabyDialog,
+                  child: const Text('Have an invite code? Join a shared baby'),
                 ),
               ],
             ),
