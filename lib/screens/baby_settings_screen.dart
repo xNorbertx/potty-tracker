@@ -148,6 +148,49 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
     controller.dispose();
   }
 
+  Future<void> _deleteBaby(Baby baby) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Remove ${baby.name}?'),
+        content: const Text(
+          'This will permanently remove this baby and all poop logs for them. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style:
+                ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove baby'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await context.read<FirestoreService>().deleteBaby(baby);
+      if (!mounted) return;
+      setState(
+          () => _babies = _babies.where((item) => item.id != baby.id).toList());
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Baby and poop logs removed.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(friendlyError(error)),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Your babies')),
@@ -174,6 +217,13 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
                       foregroundColor: Colors.white,
                       icon: Icons.edit,
                       label: 'Edit',
+                    ),
+                    SlidableAction(
+                      onPressed: (_) => _deleteBaby(baby),
+                      backgroundColor: const Color(0xFFF44336),
+                      foregroundColor: Colors.white,
+                      icon: Icons.delete,
+                      label: 'Remove',
                     ),
                   ],
                 ),

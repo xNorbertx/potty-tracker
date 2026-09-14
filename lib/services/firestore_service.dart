@@ -93,12 +93,12 @@ class FirestoreService {
           'memberUids': FieldValue.arrayRemove([uid]),
         });
       } else {
-        await _deleteBabyData(baby);
+        await deleteBaby(baby);
       }
     }
   }
 
-  Future<void> _deleteBabyData(Baby baby) async {
+  Future<void> deleteBaby(Baby baby) async {
     final entryDocs = await _entriesRef(baby.id).get();
     final operations = <DocumentReference<Map<String, dynamic>>>[
       ...entryDocs.docs.map((doc) => doc.reference),
