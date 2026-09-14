@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 
 import '../models/baby.dart';
@@ -91,63 +91,6 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
     controller.dispose();
   }
 
-  void _shareBaby(Baby baby) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Share baby'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Give this code to the other parent:'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF4CAF50)),
-              ),
-              child: Text(
-                baby.shareCode,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 6,
-                  color: Color(0xFF2E7D32),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: baby.shareCode));
-                Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Code copied to clipboard.')),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 18),
-              label: const Text('Copy code'),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'They can enter it when setting up the app.',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Done'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _addBaby() async {
     final controller = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -207,12 +150,12 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Baby settings')),
+        appBar: AppBar(title: const Text('Your babies')),
         body: ListView(
           padding: const EdgeInsets.all(20),
           children: [
             const Text(
-              'Your babies',
+              'Choose a diary',
               style: TextStyle(
                 color: Color(0xFF388E3C),
                 fontWeight: FontWeight.bold,
@@ -220,15 +163,30 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
             ),
             const SizedBox(height: 8),
             ..._babies.map(
-              (baby) => Card(
-                child: ListTile(
-                  leading: const CircleAvatar(child: Text('👶')),
-                  title: Text(baby.name),
-                  subtitle: baby.id == widget.selectedBabyId
-                      ? const Text('Current diary')
-                      : const Text('Open this diary'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.pop(context, baby.id),
+              (baby) => Slidable(
+                key: ValueKey(baby.id),
+                endActionPane: ActionPane(
+                  motion: const ScrollMotion(),
+                  children: [
+                    SlidableAction(
+                      onPressed: (_) => _renameBaby(baby),
+                      backgroundColor: const Color(0xFF4CAF50),
+                      foregroundColor: Colors.white,
+                      icon: Icons.edit,
+                      label: 'Edit',
+                    ),
+                  ],
+                ),
+                child: Card(
+                  child: ListTile(
+                    leading: const CircleAvatar(child: Text('👶')),
+                    title: Text(baby.name),
+                    subtitle: baby.id == widget.selectedBabyId
+                        ? const Text('Current diary')
+                        : const Text('Open this diary'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.pop(context, baby.id),
+                  ),
                 ),
               ),
             ),
@@ -238,38 +196,6 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
               icon: const Icon(Icons.add),
               label: const Text('Add another baby'),
             ),
-            const SizedBox(height: 28),
-            const Text(
-              'Current baby',
-              style: TextStyle(
-                color: Color(0xFF388E3C),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ..._babies.where((baby) => baby.id == widget.selectedBabyId).map(
-                  (baby) => Card(
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading:
-                              const Icon(Icons.edit, color: Color(0xFF4CAF50)),
-                          title: const Text('Edit baby name'),
-                          onTap: () => _renameBaby(baby),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading:
-                              const Icon(Icons.share, color: Color(0xFF4CAF50)),
-                          title: const Text('Share baby'),
-                          subtitle:
-                              const Text('Give another parent a share code.'),
-                          onTap: () => _shareBaby(baby),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
           ],
         ),
       );

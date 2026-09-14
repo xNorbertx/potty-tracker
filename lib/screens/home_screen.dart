@@ -188,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Icon(Icons.child_care, color: Color(0xFF4CAF50)),
                             SizedBox(width: 8),
-                            Text('Baby settings'),
+                            Text('Your babies'),
                           ],
                         ),
                       ),
