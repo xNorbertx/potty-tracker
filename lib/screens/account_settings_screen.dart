@@ -126,11 +126,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     );
 
     if (sole.isEmpty) {
-      return 'Your account will be permanently deleted. The other parent will keep access to the baby data.';
+      return 'Your account will be permanently deleted. The other parent will keep access your baby data.';
     }
     final babyNames = sole.map((baby) => baby.name).join(', ');
     if (shared.isEmpty) {
-      return 'Your account will be permanently deleted. You are the only parent attached to $babyNames, so all data about ${sole.length == 1 ? 'this baby' : 'these babies'} — including poop logs — will also be permanently deleted.';
+      return 'Your account will be permanently deleted. You are the only parent attached to $babyNames, so all data about ${sole.length == 1 ? 'your baby' : 'your babies'} — including poop logs — will also be permanently deleted.';
     }
     return 'Your account will be permanently deleted. Data for $babyNames will also be permanently deleted because no other parent is attached. Shared baby data will remain available to the other parent.';
   }
