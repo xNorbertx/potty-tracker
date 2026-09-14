@@ -85,7 +85,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                               currentPassword: currentPassword.text,
                               newPassword: newPassword.text,
                             );
-                        if (!mounted) return;
+                        if (!mounted || !dialogContext.mounted) return;
                         Navigator.pop(dialogContext);
                         ScaffoldMessenger.of(this.context).showSnackBar(
                           const SnackBar(content: Text('Password changed.')),
@@ -118,6 +118,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   }
 
   String _deletionMessage(String uid) {
+    if (widget.babies.isEmpty) {
+      return 'Your account will be permanently deleted.';
+    }
     final shared = widget.babies.where(
       (baby) => baby.memberUids.any((member) => member != uid),
     );

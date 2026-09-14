@@ -132,6 +132,41 @@ void main() {
         isFalse,
       );
     });
+
+    test('deleteBaby removes its poop logs and share code', () async {
+      final baby = await service.addBaby('parent-1', 'Alice');
+      final entry = await service.addEntry(
+        uid: 'parent-1',
+        babyId: baby.id,
+        timestamp: DateTime(2024, 6, 15, 10),
+        consistency: Consistency.soft,
+      );
+
+      await service.deleteBaby(baby);
+
+      expect(
+        (await fakeFirestore.collection('babies').doc(baby.id).get()).exists,
+        isFalse,
+      );
+      expect(
+        (await fakeFirestore
+                .collection('babies')
+                .doc(baby.id)
+                .collection('entries')
+                .doc(entry.id)
+                .get())
+            .exists,
+        isFalse,
+      );
+      expect(
+        (await fakeFirestore
+                .collection('share_codes')
+                .doc(baby.shareCode)
+                .get())
+            .exists,
+        isFalse,
+      );
+    });
   });
 
   group('FirestoreService - poop entries', () {
