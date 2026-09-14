@@ -27,6 +27,8 @@ service cloud.firestore {
 
     match /share_codes/{code} {
       allow read, create: if isSignedIn();
+      allow delete: if isSignedIn() &&
+        isBabyMember(resource.data.babyId);
     }
   }
 }

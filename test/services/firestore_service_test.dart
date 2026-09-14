@@ -82,6 +82,56 @@ void main() {
       expect(babies.singleWhere((baby) => baby.id == first.id).name, 'Alicia');
       expect(babies.singleWhere((baby) => baby.id == second.id).name, 'Bea');
     });
+
+    test('removeAccountData removes a user from a shared baby', () async {
+      final baby = await service.addBaby('parent-1', 'Alice');
+      final sharedBaby =
+          await service.joinBabyWithCode('parent-2', baby.shareCode);
+
+      await service.removeAccountData(
+        uid: 'parent-2',
+        babies: [sharedBaby!],
+      );
+
+      final saved = await fakeFirestore.collection('babies').doc(baby.id).get();
+      expect(saved.exists, isTrue);
+      expect(saved.data()?['memberUids'], ['parent-1']);
+    });
+
+    test('removeAccountData deletes a sole-member baby and its data', () async {
+      final baby = await service.addBaby('parent-1', 'Alice');
+      final entry = await service.addEntry(
+        uid: 'parent-1',
+        babyId: baby.id,
+        timestamp: DateTime(2024, 6, 15, 10),
+        consistency: Consistency.soft,
+      );
+
+      await service.removeAccountData(uid: 'parent-1', babies: [baby]);
+
+      expect(
+        (await fakeFirestore.collection('babies').doc(baby.id).get()).exists,
+        isFalse,
+      );
+      expect(
+        (await fakeFirestore
+                .collection('share_codes')
+                .doc(baby.shareCode)
+                .get())
+            .exists,
+        isFalse,
+      );
+      expect(
+        (await fakeFirestore
+                .collection('babies')
+                .doc(baby.id)
+                .collection('entries')
+                .doc(entry.id)
+                .get())
+            .exists,
+        isFalse,
+      );
+    });
   });
 
   group('FirestoreService - poop entries', () {

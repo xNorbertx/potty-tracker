@@ -17,6 +17,11 @@ class AuthService {
 
   String? get currentUserId => _auth.currentUser?.uid;
 
+  bool get hasPasswordProvider =>
+      _auth.currentUser?.providerData.any(
+          (provider) => provider.providerId == EmailAuthProvider.PROVIDER_ID) ??
+      false;
+
   Future<UserCredential> signIn({
     required String email,
     required String password,
@@ -65,5 +70,29 @@ class AuthService {
       _auth.signOut(),
       if (!kIsWeb) _googleSignIn!.signOut(),
     ]);
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+    final email = user?.email;
+    if (user == null || email == null || !hasPasswordProvider) {
+      throw StateError('This account does not have a password.');
+    }
+
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: currentPassword,
+    );
+    await user.reauthenticateWithCredential(credential);
+    await user.updatePassword(newPassword);
+  }
+
+  Future<void> deleteCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('No signed-in account.');
+    await user.delete();
   }
 }

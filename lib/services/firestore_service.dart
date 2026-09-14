@@ -80,6 +80,43 @@ class FirestoreService {
     return Baby.fromFirestore(updatedDoc);
   }
 
+  /// Removes [uid] from shared babies and deletes baby data that has no other
+  /// member. This must run before deleting the Firebase Authentication user.
+  Future<void> removeAccountData({
+    required String uid,
+    required List<Baby> babies,
+  }) async {
+    for (final baby in babies) {
+      final otherMembers = baby.memberUids.where((id) => id != uid).toList();
+      if (otherMembers.isNotEmpty) {
+        await _babiesRef.doc(baby.id).update({
+          'memberUids': FieldValue.arrayRemove([uid]),
+        });
+      } else {
+        await _deleteBabyData(baby);
+      }
+    }
+  }
+
+  Future<void> _deleteBabyData(Baby baby) async {
+    final entryDocs = await _entriesRef(baby.id).get();
+    final operations = <DocumentReference<Map<String, dynamic>>>[
+      ...entryDocs.docs.map((doc) => doc.reference),
+      if (baby.shareCode.isNotEmpty)
+        _db.collection('share_codes').doc(baby.shareCode),
+      _babiesRef.doc(baby.id),
+    ];
+
+    // Firestore batches allow a maximum of 500 writes.
+    for (var start = 0; start < operations.length; start += 500) {
+      final batch = _db.batch();
+      for (final reference in operations.skip(start).take(500)) {
+        batch.delete(reference);
+      }
+      await batch.commit();
+    }
+  }
+
   // ── Poop Entries ──────────────────────────────────────────────────────────
 
   CollectionReference<Map<String, dynamic>> _entriesRef(String babyId) =>

@@ -23,6 +23,9 @@ String friendlyError(Object error) {
   if (raw.contains('weak-password')) {
     return 'Password must be at least 6 characters.';
   }
+  if (raw.contains('requires-recent-login')) {
+    return 'Please sign in again, then try this action.';
+  }
   if (raw.contains('invalid-email')) {
     return 'Please enter a valid email address.';
   }
