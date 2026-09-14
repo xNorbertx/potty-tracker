@@ -35,7 +35,8 @@ class FirestoreService {
         .map((snap) => snap.docs.map(Baby.fromFirestore).toList());
   }
 
-  Future<Baby> addBaby(String uid, String name) async {
+  Future<Baby> addBaby(String uid, String name,
+      {String? caregiverLabel}) async {
     final id = _uuid.v4();
     final shareCode = _generateShareCode();
     final baby = Baby(
@@ -43,6 +44,7 @@ class FirestoreService {
       name: name,
       ownerUid: uid,
       memberUids: [uid],
+      memberLabels: {uid: caregiverLabel ?? 'Caregiver'},
       shareCode: shareCode,
       createdAt: DateTime.now(),
     );
@@ -57,7 +59,11 @@ class FirestoreService {
     await _babiesRef.doc(babyId).update({'name': newName});
   }
 
-  Future<Baby?> joinBabyWithCode(String uid, String code) async {
+  Future<Baby?> joinBabyWithCode(
+    String uid,
+    String code, {
+    String? caregiverLabel,
+  }) async {
     final codeDoc = await _db
         .collection('share_codes')
         .doc(code.toUpperCase().trim())
@@ -77,7 +83,32 @@ class FirestoreService {
 
     final updatedDoc = await babyRef.get();
     if (!updatedDoc.exists) return null;
-    return Baby.fromFirestore(updatedDoc);
+    final baby = Baby.fromFirestore(updatedDoc);
+    if (caregiverLabel != null && caregiverLabel.isNotEmpty) {
+      await babyRef.update({
+        'memberLabels': {...baby.memberLabels, uid: caregiverLabel},
+      });
+      return baby.copyWith(
+        memberLabels: {...baby.memberLabels, uid: caregiverLabel},
+      );
+    }
+    return baby;
+  }
+
+  Stream<Baby?> babyStream(String babyId) =>
+      _babiesRef.doc(babyId).snapshots().map(
+            (snapshot) => snapshot.exists ? Baby.fromFirestore(snapshot) : null,
+          );
+
+  Future<void> updateCaregiverLabel({
+    required Baby baby,
+    required String uid,
+    required String label,
+  }) async {
+    if (label.isEmpty || baby.memberLabels[uid] == label) return;
+    await _babiesRef.doc(baby.id).update({
+      'memberLabels': {...baby.memberLabels, uid: label},
+    });
   }
 
   /// Removes [uid] from shared babies and deletes baby data that has no other

@@ -16,13 +16,18 @@ void main() {
 
   group('FirestoreService - babies', () {
     test('addBaby creates a baby document with share code', () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby(
+        'user1',
+        'Alice',
+        caregiverLabel: 'parent@example.com',
+      );
       expect(baby.name, 'Alice');
       expect(baby.id, isNotEmpty);
       expect(baby.ownerUid, 'user1');
       expect(baby.memberUids, contains('user1'));
       expect(baby.shareCode, isNotEmpty);
       expect(baby.shareCode.length, 6);
+      expect(baby.memberLabels, {'user1': 'parent@example.com'});
     });
 
     test('babiesStream emits added baby', () async {
@@ -48,10 +53,15 @@ void main() {
 
     test('joinBabyWithCode adds user to memberUids', () async {
       final baby = await service.addBaby('user1', 'Charlie');
-      final joined = await service.joinBabyWithCode('user2', baby.shareCode);
+      final joined = await service.joinBabyWithCode(
+        'user2',
+        baby.shareCode,
+        caregiverLabel: 'other@example.com',
+      );
 
       expect(joined, isNotNull);
       expect(joined!.memberUids, containsAll(['user1', 'user2']));
+      expect(joined.memberLabels['user2'], 'other@example.com');
     });
 
     test('joinBabyWithCode ignores casing and surrounding whitespace',
