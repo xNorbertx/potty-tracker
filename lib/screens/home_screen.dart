@@ -10,6 +10,7 @@ import '../widgets/calendar_widget.dart';
 import '../widgets/poop_entry_tile.dart';
 import '../widgets/app_status.dart';
 import 'log_poop_screen.dart';
+import 'account_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -229,6 +230,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         await _showRenameBabyDialog(context, baby);
                       } else if (val == 'share') {
                         _showShareDialog(context, baby);
+                      } else if (val == 'account') {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                AccountSettingsScreen(babies: babies),
+                          ),
+                        );
                       } else if (val == 'signout') {
                         final nav = Navigator.of(context);
                         await auth.signOut();
@@ -254,6 +262,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             Icon(Icons.share, color: Color(0xFF4CAF50)),
                             SizedBox(width: 8),
                             Text('Share Baby'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      const PopupMenuItem(
+                        value: 'account',
+                        child: Row(
+                          children: [
+                            Icon(Icons.manage_accounts,
+                                color: Color(0xFF4CAF50)),
+                            SizedBox(width: 8),
+                            Text('Account settings'),
                           ],
                         ),
                       ),
