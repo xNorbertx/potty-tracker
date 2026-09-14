@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../models/baby.dart';
@@ -11,6 +10,7 @@ import '../widgets/poop_entry_tile.dart';
 import '../widgets/app_status.dart';
 import 'log_poop_screen.dart';
 import 'account_settings_screen.dart';
+import 'baby_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +22,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
+  String? _selectedBabyId;
 
   // Cache the entries stream so it isn't recreated on every build
   Stream<List<PoopEntry>>? _entriesStream;
@@ -34,114 +35,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _cachedBabyId = babyId;
     }
     return _entriesStream!;
-  }
-
-  Future<void> _showRenameBabyDialog(BuildContext context, Baby baby) async {
-    final ctrl = TextEditingController(text: baby.name);
-    final formKey = GlobalKey<FormState>();
-    final firestore = context.read<FirestoreService>();
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('✏️ Edit Baby Name'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: ctrl,
-            autofocus: true,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: "Baby's name"),
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Please enter a name' : null,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              Navigator.pop(ctx);
-              try {
-                await firestore.updateBabyName(baby.id, ctrl.text.trim());
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Baby name updated! 👶')),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(friendlyError(e)),
-                    backgroundColor: Colors.red.shade400,
-                  ),
-                );
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    ctrl.dispose();
-  }
-
-  void _showShareDialog(BuildContext context, Baby baby) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Share Baby 👶'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Give this code to your partner:'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF4CAF50)),
-              ),
-              child: Text(
-                baby.shareCode,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 6,
-                  color: Color(0xFF2E7D32),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: baby.shareCode));
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Code copied to clipboard!')),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 18),
-              label: const Text('Copy Code'),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'They enter this code when setting up the app.',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
-        ],
-      ),
-    );
   }
 
   @override
@@ -186,7 +79,10 @@ class _HomeScreenState extends State<HomeScreen> {
           return _SetupScreen(uid: uid, firestore: firestore, auth: auth);
         }
 
-        final baby = babies.first;
+        final baby = babies.firstWhere(
+          (candidate) => candidate.id == _selectedBabyId,
+          orElse: () => babies.first,
+        );
         final entriesStream = _getEntriesStream(firestore, baby.id);
 
         return StreamBuilder<List<PoopEntry>>(
@@ -225,11 +121,52 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: Text('👶 ${baby.name}\'s Poop Diary 💩'),
                 actions: [
                   PopupMenuButton<String>(
+                    tooltip: 'Switch baby',
+                    icon: const Icon(Icons.switch_account),
+                    onSelected: (babyId) => setState(() {
+                      _selectedBabyId = babyId;
+                      _entriesStream = null;
+                      _cachedBabyId = null;
+                    }),
+                    itemBuilder: (_) => babies
+                        .map(
+                          (candidate) => PopupMenuItem(
+                            value: candidate.id,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  candidate.id == baby.id
+                                      ? Icons.check
+                                      : Icons.child_care,
+                                  color: const Color(0xFF4CAF50),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(candidate.name),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  PopupMenuButton<String>(
                     onSelected: (val) async {
-                      if (val == 'rename') {
-                        await _showRenameBabyDialog(context, baby);
-                      } else if (val == 'share') {
-                        _showShareDialog(context, baby);
+                      if (val == 'baby') {
+                        final selectedBabyId =
+                            await Navigator.of(context).push<String>(
+                          MaterialPageRoute(
+                            builder: (_) => BabySettingsScreen(
+                              babies: babies,
+                              selectedBabyId: baby.id,
+                            ),
+                          ),
+                        );
+                        if (selectedBabyId != null && mounted) {
+                          setState(() {
+                            _selectedBabyId = selectedBabyId;
+                            _entriesStream = null;
+                            _cachedBabyId = null;
+                          });
+                        }
                       } else if (val == 'account') {
                         await Navigator.of(context).push(
                           MaterialPageRoute(
@@ -246,22 +183,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                     itemBuilder: (_) => [
                       const PopupMenuItem(
-                        value: 'rename',
+                        value: 'baby',
                         child: Row(
                           children: [
-                            Icon(Icons.edit, color: Color(0xFF4CAF50)),
+                            Icon(Icons.child_care, color: Color(0xFF4CAF50)),
                             SizedBox(width: 8),
-                            Text('Edit Baby Name'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'share',
-                        child: Row(
-                          children: [
-                            Icon(Icons.share, color: Color(0xFF4CAF50)),
-                            SizedBox(width: 8),
-                            Text('Share Baby'),
+                            Text('Baby settings'),
                           ],
                         ),
                       ),
@@ -306,19 +233,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const Divider(height: 1),
                   if (dayEntries.isEmpty)
-                    Expanded(
+                    const Expanded(
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('🌟', style: TextStyle(fontSize: 40)),
-                            const SizedBox(height: 8),
-                            const Text(
+                            Text('🌟', style: TextStyle(fontSize: 40)),
+                            SizedBox(height: 8),
+                            Text(
                               'No entries for this day',
                               style: TextStyle(color: Colors.grey),
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
+                            SizedBox(height: 4),
+                            Text(
                               'Tap 💩 to log one!',
                               style:
                                   TextStyle(color: Colors.grey, fontSize: 13),
