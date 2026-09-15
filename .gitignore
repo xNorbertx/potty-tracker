@@ -31,7 +31,8 @@ macos/Flutter/ephemeral/
 windows/flutter/ephemeral/
 linux/flutter/ephemeral/
 
-# Firebase config (contains API keys — keep local only)
+# Firebase client configuration is generated locally or by CI.
+# It identifies the Firebase project but does not contain service credentials.
 lib/firebase_options.dart
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist

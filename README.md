@@ -49,6 +49,24 @@ a new PR and merge it; the same pipeline then publishes the reverted code.
 This pipeline deploys the web app only. It does not release Android APKs or
 change Firebase Authentication settings, Firestore rules, or database contents.
 
+### Firebase configuration and rules
+
+`lib/firebase_options.dart`, Android's `google-services.json`, and iOS's
+`GoogleService-Info.plist` are deliberately ignored. Copy the committed examples
+locally and fill them from Firebase Project Settings. The Firebase API key in
+those client configuration files is embedded in the published app and is not a
+service-account secret; restrict it to this project's approved apps in Google
+Cloud Console. Actual access to diary data is enforced by Firestore rules.
+
+Deploy a reviewed rule change manually from an authenticated Firebase CLI:
+
+```powershell
+firebase deploy --only firestore:rules
+```
+
+The committed `.firebaserc` maps that command to the `baby-poop-tracker`
+project. GitHub Actions does not deploy Firestore rules yet.
+
 ## Setup
 
 ### Android APK pipeline
