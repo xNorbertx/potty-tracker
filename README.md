@@ -46,8 +46,9 @@ Reload the app on your phone to pick up a new version. You can manually rerun th
 workflow on `main` from Actions. To roll back, revert the problematic PR through
 a new PR and merge it; the same pipeline then publishes the reverted code.
 
-This pipeline deploys the web app only. It does not release Android APKs or
-change Firebase Authentication settings, Firestore rules, or database contents.
+This pipeline deploys the web app only. It does not release Android APKs, change
+Firebase Authentication settings, or change database contents. Firestore rules
+have their own deployment workflow, described below.
 
 ## Setup
 
@@ -151,6 +152,25 @@ service cloud.firestore {
     }
   }
 }
+```
+
+#### Automatic rule deployment
+
+After a PR is merged into `main`, the **Deploy Firestore rules** workflow deploys
+the committed rules whenever `firestore.rules`, `firebase.json`, or `.firebaserc`
+changes. It deploys rules only; it does not alter Firestore data.
+
+One-time repository configuration is required. Create a service account in the
+`baby-poop-tracker` Google Cloud project with the **Firebase Rules Admin** role,
+create a JSON key for it, and store the complete key file as the repository
+Actions secret `FIREBASE_RULES_SERVICE_ACCOUNT`. Do not commit that key file.
+The workflow fails clearly, leaving the currently deployed rules unchanged, until
+the secret is configured.
+
+For an emergency manual deployment from an authenticated Firebase CLI:
+
+```bash
+firebase deploy --only firestore:rules
 ```
 
 ### Run
