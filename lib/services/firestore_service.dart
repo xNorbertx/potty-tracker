@@ -214,10 +214,13 @@ class FirestoreService {
   }
 
   Future<void> updateEntry({
+    required String uid,
     required String babyId,
     required String entryId,
     required DateTime timestamp,
     required Consistency consistency,
+    String? loggedByName,
+    String? loggedByEmail,
     PoopSize? size,
     PoopColor? color,
     String? notes,
@@ -228,6 +231,9 @@ class FirestoreService {
       'size': size?.value ?? FieldValue.delete(),
       'color': color?.value ?? FieldValue.delete(),
       'notes': notes ?? FieldValue.delete(),
+      'loggedBy': uid,
+      'loggedByName': loggedByName ?? FieldValue.delete(),
+      'loggedByEmail': loggedByEmail ?? FieldValue.delete(),
     });
   }
 }

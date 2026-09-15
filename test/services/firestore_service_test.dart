@@ -286,10 +286,13 @@ void main() {
       );
 
       await service.updateEntry(
+        uid: 'user2',
         babyId: baby.id,
         entryId: entry.id,
         timestamp: DateTime(2024, 6, 16, 10, 30),
         consistency: Consistency.watery,
+        loggedByName: 'Other caregiver',
+        loggedByEmail: 'other@example.com',
       );
 
       final updated = (await service.entriesStream(baby.id).first).single;
@@ -299,7 +302,9 @@ void main() {
       expect(updated.size, isNull);
       expect(updated.color, isNull);
       expect(updated.notes, isNull);
-      expect(updated.loggedBy, 'user1');
+      expect(updated.loggedBy, 'user2');
+      expect(updated.loggedByName, 'Other caregiver');
+      expect(updated.loggedByEmail, 'other@example.com');
     });
 
     test('multiple entries are returned ordered by timestamp desc', () async {
