@@ -120,15 +120,19 @@ class PoopEntryTile extends StatelessWidget {
                   color: Color(0xFF4CAF50),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                entry.loggedByName?.isNotEmpty == true
-                    ? entry.loggedByName!
-                    : entry.loggedByEmail?.isNotEmpty == true
-                        ? entry.loggedByEmail!
-                        : 'Caregiver',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
+              if (entry.loggedByName?.isNotEmpty == true) ...[
+                const SizedBox(height: 2),
+                Text(
+                  entry.loggedByName!,
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ] else if (entry.loggedByEmail?.isNotEmpty == true) ...[
+                const SizedBox(height: 2),
+                Text(
+                  entry.loggedByEmail!,
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ],
             ],
           ),
         ),
