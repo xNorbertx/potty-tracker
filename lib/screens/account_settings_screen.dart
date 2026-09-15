@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/baby.dart';
+import '../models/caregiver_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
@@ -17,6 +18,67 @@ class AccountSettingsScreen extends StatefulWidget {
 
 class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   bool _deletingAccount = false;
+
+  Future<void> _editName(CaregiverProfile? profile) async {
+    final auth = context.read<AuthService>();
+    final uid = auth.currentUserId;
+    if (uid == null) return;
+    final controller = TextEditingController(text: profile?.name ?? '');
+    final formKey = GlobalKey<FormState>();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Your name'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(labelText: 'Name'),
+            validator: (value) => value == null || value.trim().isEmpty
+                ? 'Please enter your name'
+                : null,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              try {
+                await context.read<FirestoreService>().saveCaregiverProfile(
+                      CaregiverProfile(
+                        uid: uid,
+                        name: controller.text.trim(),
+                        email: auth.currentUserEmail ?? profile?.email ?? '',
+                      ),
+                    );
+                if (!mounted || !dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Name updated.')),
+                );
+              } catch (error) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(friendlyError(error)),
+                    backgroundColor: Colors.red.shade400,
+                  ),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+  }
 
   Future<void> _changePassword() async {
     final formKey = GlobalKey<FormState>();
@@ -207,6 +269,25 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               child: Text(auth.currentUser!.email!,
                   style: const TextStyle(color: Colors.grey)),
             ),
+          StreamBuilder<CaregiverProfile?>(
+            stream: auth.currentUserId == null
+                ? null
+                : context
+                    .read<FirestoreService>()
+                    .caregiverProfileStream(auth.currentUserId!),
+            builder: (context, snapshot) => Card(
+              child: ListTile(
+                leading:
+                    const Icon(Icons.person_outline, color: Color(0xFF4CAF50)),
+                title: const Text('Your name'),
+                subtitle: Text(snapshot.data?.displayName.isNotEmpty == true
+                    ? snapshot.data!.displayName
+                    : 'Add your name'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _editName(snapshot.data),
+              ),
+            ),
+          ),
           if (auth.hasPasswordProvider)
             Card(
               child: ListTile(

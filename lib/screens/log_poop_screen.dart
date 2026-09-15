@@ -119,10 +119,18 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
     setState(() => _loading = true);
     try {
       final firestore = context.read<FirestoreService>();
+      final auth = context.read<AuthService>();
+      final uid = auth.currentUserId!;
+      final profile = await firestore.getCaregiverProfile(uid);
+      final loggedByName = profile?.name;
+      final loggedByEmail = profile?.email.isNotEmpty == true
+          ? profile!.email
+          : auth.currentUserEmail;
       final notes =
           _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim();
       if (_isEditing) {
         await firestore.updateEntry(
+          uid: uid,
           babyId: widget.baby.id,
           entryId: widget.entry!.id,
           timestamp: _selectedDateTime,
@@ -130,17 +138,20 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
           size: _selectedSize,
           color: _selectedColor,
           notes: notes,
+          loggedByName: loggedByName,
+          loggedByEmail: loggedByEmail,
         );
       } else {
-        final auth = context.read<AuthService>();
         await firestore.addEntry(
-          uid: auth.currentUserId!,
+          uid: uid,
           babyId: widget.baby.id,
           timestamp: _selectedDateTime,
           consistency: _selectedConsistency!,
           size: _selectedSize,
           color: _selectedColor,
           notes: notes,
+          loggedByName: loggedByName,
+          loggedByEmail: loggedByEmail,
         );
       }
       if (!mounted) return;
@@ -150,7 +161,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
           content: Text(_isEditing
               ? '💩 Poop entry updated!'
               : '💩 Poop logged successfully!'),
-          backgroundColor: Color(0xFF4CAF50),
+          backgroundColor: const Color(0xFF4CAF50),
         ),
       );
     } catch (e) {

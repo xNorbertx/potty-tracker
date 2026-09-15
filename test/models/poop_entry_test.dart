@@ -95,6 +95,8 @@ void main() {
         size: PoopSize.medium,
         color: PoopColor.orange,
         notes: 'Test note',
+        loggedByName: 'Norbert',
+        loggedByEmail: 'norbert@example.com',
         createdAt: now,
       );
 
@@ -104,6 +106,8 @@ void main() {
       expect(map['size'], 'medium');
       expect(map['color'], 'orange');
       expect(map['notes'], 'Test note');
+      expect(map['loggedByName'], 'Norbert');
+      expect(map['loggedByEmail'], 'norbert@example.com');
       expect(map['timestamp'], isNotNull);
       expect(map['createdAt'], isNotNull);
     });

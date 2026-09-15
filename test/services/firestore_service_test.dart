@@ -4,6 +4,7 @@ import 'package:potty_tracker/models/consistency.dart';
 import 'package:potty_tracker/models/poop_color.dart';
 import 'package:potty_tracker/models/poop_size.dart';
 import 'package:potty_tracker/services/firestore_service.dart';
+import 'package:potty_tracker/models/caregiver_profile.dart';
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
@@ -12,6 +13,22 @@ void main() {
   setUp(() {
     fakeFirestore = FakeFirebaseFirestore();
     service = FirestoreService(db: fakeFirestore);
+  });
+
+  group('FirestoreService - caregiver profiles', () {
+    test('saves and reads a caregiver profile', () async {
+      const profile = CaregiverProfile(
+        uid: 'user1',
+        name: 'Norbert',
+        email: 'norbert@example.com',
+      );
+
+      await service.saveCaregiverProfile(profile);
+
+      final saved = await service.getCaregiverProfile('user1');
+      expect(saved?.name, 'Norbert');
+      expect(saved?.email, 'norbert@example.com');
+    });
   });
 
   group('FirestoreService - babies', () {
@@ -269,10 +286,13 @@ void main() {
       );
 
       await service.updateEntry(
+        uid: 'user2',
         babyId: baby.id,
         entryId: entry.id,
         timestamp: DateTime(2024, 6, 16, 10, 30),
         consistency: Consistency.watery,
+        loggedByName: 'Other caregiver',
+        loggedByEmail: 'other@example.com',
       );
 
       final updated = (await service.entriesStream(baby.id).first).single;
@@ -282,7 +302,9 @@ void main() {
       expect(updated.size, isNull);
       expect(updated.color, isNull);
       expect(updated.notes, isNull);
-      expect(updated.loggedBy, 'user1');
+      expect(updated.loggedBy, 'user2');
+      expect(updated.loggedByName, 'Other caregiver');
+      expect(updated.loggedByEmail, 'other@example.com');
     });
 
     test('multiple entries are returned ordered by timestamp desc', () async {

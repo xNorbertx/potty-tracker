@@ -12,6 +12,8 @@ class PoopEntry {
   final PoopColor? color;
   final String? notes;
   final String? loggedBy;
+  final String? loggedByName;
+  final String? loggedByEmail;
   final DateTime createdAt;
 
   PoopEntry({
@@ -23,6 +25,8 @@ class PoopEntry {
     this.color,
     this.notes,
     this.loggedBy,
+    this.loggedByName,
+    this.loggedByEmail,
     required this.createdAt,
   });
 
@@ -39,6 +43,8 @@ class PoopEntry {
       color: PoopColorExtension.fromString(data['color'] as String?),
       notes: data['notes'] as String?,
       loggedBy: data['loggedBy'] as String?,
+      loggedByName: data['loggedByName'] as String?,
+      loggedByEmail: data['loggedByEmail'] as String?,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
     );
   }
@@ -52,6 +58,8 @@ class PoopEntry {
       if (color != null) 'color': color!.value,
       if (notes != null) 'notes': notes,
       if (loggedBy != null) 'loggedBy': loggedBy,
+      if (loggedByName != null) 'loggedByName': loggedByName,
+      if (loggedByEmail != null) 'loggedByEmail': loggedByEmail,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -65,6 +73,8 @@ class PoopEntry {
     PoopColor? color,
     String? notes,
     String? loggedBy,
+    String? loggedByName,
+    String? loggedByEmail,
     DateTime? createdAt,
   }) {
     return PoopEntry(
@@ -76,6 +86,8 @@ class PoopEntry {
       color: color ?? this.color,
       notes: notes ?? this.notes,
       loggedBy: loggedBy ?? this.loggedBy,
+      loggedByName: loggedByName ?? this.loggedByName,
+      loggedByEmail: loggedByEmail ?? this.loggedByEmail,
       createdAt: createdAt ?? this.createdAt,
     );
   }
