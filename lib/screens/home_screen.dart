@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../models/baby.dart';
+import '../models/caregiver_profile.dart';
 import '../models/poop_entry.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -9,6 +10,7 @@ import '../widgets/calendar_widget.dart';
 import '../widgets/poop_entry_tile.dart';
 import '../widgets/app_status.dart';
 import 'log_poop_screen.dart';
+import 'profile_setup_screen.dart';
 import 'account_settings_screen.dart';
 import 'baby_settings_screen.dart';
 
@@ -52,273 +54,300 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return StreamBuilder<List<Baby>>(
-      stream: firestore.babiesStream(uid),
-      builder: (context, babySnap) {
-        // While loading, show spinner (prevents flash of setup screen)
-        if (babySnap.connectionState == ConnectionState.waiting &&
-            babySnap.data == null) {
+    return StreamBuilder<CaregiverProfile?>(
+      stream: firestore.caregiverProfileStream(uid),
+      builder: (context, profileSnap) {
+        if (profileSnap.connectionState == ConnectionState.waiting &&
+            profileSnap.data == null) {
           return const Scaffold(
-            body: AppLoadingView(message: 'Loading your diary...'),
+            body: AppLoadingView(message: 'Loading your account...'),
           );
         }
-
-        if (babySnap.hasError && babySnap.data == null) {
+        if (profileSnap.hasError) {
           return Scaffold(
             body: AppErrorView(
-              message: friendlyError(babySnap.error!),
+              message: friendlyError(profileSnap.error!),
               onRetry: () => setState(() {}),
             ),
           );
         }
+        if (profileSnap.data == null) return const ProfileSetupScreen();
 
-        final babies = babySnap.data ?? [];
-
-        // Confirmed empty → go to setup
-        if (babies.isEmpty) {
-          return _NoBabiesHome(uid: uid, firestore: firestore, auth: auth);
-        }
-
-        final baby = babies.firstWhere(
-          (candidate) => candidate.id == _selectedBabyId,
-          orElse: () => babies.first,
-        );
-        final entriesStream = _getEntriesStream(firestore, baby.id);
-
-        return StreamBuilder<List<PoopEntry>>(
-          stream: entriesStream,
-          builder: (context, entrySnap) {
-            if (entrySnap.connectionState == ConnectionState.waiting &&
-                entrySnap.data == null) {
-              return Scaffold(
-                appBar: AppBar(title: Text('👶 ${baby.name}\'s Poop Diary 💩')),
-                body: const AppLoadingView(message: 'Loading poop entries...'),
+        return StreamBuilder<List<Baby>>(
+          stream: firestore.babiesStream(uid),
+          builder: (context, babySnap) {
+            // While loading, show spinner (prevents flash of setup screen)
+            if (babySnap.connectionState == ConnectionState.waiting &&
+                babySnap.data == null) {
+              return const Scaffold(
+                body: AppLoadingView(message: 'Loading your diary...'),
               );
             }
 
-            if (entrySnap.hasError && entrySnap.data == null) {
+            if (babySnap.hasError && babySnap.data == null) {
               return Scaffold(
-                appBar: AppBar(title: Text('👶 ${baby.name}\'s Poop Diary 💩')),
                 body: AppErrorView(
-                  message: friendlyError(entrySnap.error!),
-                  onRetry: () => setState(() {
-                    _entriesStream = null;
-                    _cachedBabyId = null;
-                  }),
+                  message: friendlyError(babySnap.error!),
+                  onRetry: () => setState(() {}),
                 ),
               );
             }
 
-            final entries = entrySnap.data ?? [];
+            final babies = babySnap.data ?? [];
 
-            final dayEntries = entries
-                .where((e) => isSameDay(e.timestamp, _selectedDay))
-                .toList()
-              ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+            // Confirmed empty → go to setup
+            if (babies.isEmpty) {
+              return _NoBabiesHome(uid: uid, firestore: firestore, auth: auth);
+            }
 
-            return Scaffold(
-              appBar: AppBar(
-                title: Text('👶 ${baby.name}\'s Poop Diary 💩'),
-                actions: [
-                  PopupMenuButton<String>(
-                    tooltip: 'Switch baby',
-                    icon: const Icon(Icons.switch_account),
-                    onSelected: (babyId) => setState(() {
-                      _selectedBabyId = babyId;
-                      _entriesStream = null;
-                      _cachedBabyId = null;
-                    }),
-                    itemBuilder: (_) => babies
-                        .map(
-                          (candidate) => PopupMenuItem(
-                            value: candidate.id,
+            final baby = babies.firstWhere(
+              (candidate) => candidate.id == _selectedBabyId,
+              orElse: () => babies.first,
+            );
+            final entriesStream = _getEntriesStream(firestore, baby.id);
+
+            return StreamBuilder<List<PoopEntry>>(
+              stream: entriesStream,
+              builder: (context, entrySnap) {
+                if (entrySnap.connectionState == ConnectionState.waiting &&
+                    entrySnap.data == null) {
+                  return Scaffold(
+                    appBar:
+                        AppBar(title: Text('👶 ${baby.name}\'s Poop Diary 💩')),
+                    body: const AppLoadingView(
+                        message: 'Loading poop entries...'),
+                  );
+                }
+
+                if (entrySnap.hasError && entrySnap.data == null) {
+                  return Scaffold(
+                    appBar:
+                        AppBar(title: Text('👶 ${baby.name}\'s Poop Diary 💩')),
+                    body: AppErrorView(
+                      message: friendlyError(entrySnap.error!),
+                      onRetry: () => setState(() {
+                        _entriesStream = null;
+                        _cachedBabyId = null;
+                      }),
+                    ),
+                  );
+                }
+
+                final entries = entrySnap.data ?? [];
+
+                final dayEntries = entries
+                    .where((e) => isSameDay(e.timestamp, _selectedDay))
+                    .toList()
+                  ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+                return Scaffold(
+                  appBar: AppBar(
+                    title: Text('👶 ${baby.name}\'s Poop Diary 💩'),
+                    actions: [
+                      PopupMenuButton<String>(
+                        tooltip: 'Switch baby',
+                        icon: const Icon(Icons.switch_account),
+                        onSelected: (babyId) => setState(() {
+                          _selectedBabyId = babyId;
+                          _entriesStream = null;
+                          _cachedBabyId = null;
+                        }),
+                        itemBuilder: (_) => babies
+                            .map(
+                              (candidate) => PopupMenuItem(
+                                value: candidate.id,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      candidate.id == baby.id
+                                          ? Icons.check
+                                          : Icons.child_care,
+                                      color: const Color(0xFF4CAF50),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(candidate.name),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      PopupMenuButton<String>(
+                        onSelected: (val) async {
+                          if (val == 'baby') {
+                            final selectedBabyId =
+                                await Navigator.of(context).push<String>(
+                              MaterialPageRoute(
+                                builder: (_) => BabySettingsScreen(
+                                  babies: babies,
+                                  selectedBabyId: baby.id,
+                                ),
+                              ),
+                            );
+                            if (selectedBabyId != null && mounted) {
+                              setState(() {
+                                _selectedBabyId = selectedBabyId;
+                                _entriesStream = null;
+                                _cachedBabyId = null;
+                              });
+                            }
+                          } else if (val == 'account') {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    AccountSettingsScreen(babies: babies),
+                              ),
+                            );
+                          } else if (val == 'signout') {
+                            final nav = Navigator.of(context);
+                            await auth.signOut();
+                            if (!mounted) return;
+                            nav.pushReplacementNamed('/login');
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'baby',
                             child: Row(
                               children: [
-                                Icon(
-                                  candidate.id == baby.id
-                                      ? Icons.check
-                                      : Icons.child_care,
-                                  color: const Color(0xFF4CAF50),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(candidate.name),
+                                Icon(Icons.child_care,
+                                    color: Color(0xFF4CAF50)),
+                                SizedBox(width: 8),
+                                Text('Your babies'),
                               ],
                             ),
                           ),
-                        )
-                        .toList(),
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (val) async {
-                      if (val == 'baby') {
-                        final selectedBabyId =
-                            await Navigator.of(context).push<String>(
-                          MaterialPageRoute(
-                            builder: (_) => BabySettingsScreen(
-                              babies: babies,
-                              selectedBabyId: baby.id,
+                          const PopupMenuDivider(),
+                          const PopupMenuItem(
+                            value: 'account',
+                            child: Row(
+                              children: [
+                                Icon(Icons.manage_accounts,
+                                    color: Color(0xFF4CAF50)),
+                                SizedBox(width: 8),
+                                Text('Account settings'),
+                              ],
                             ),
                           ),
-                        );
-                        if (selectedBabyId != null && mounted) {
-                          setState(() {
-                            _selectedBabyId = selectedBabyId;
-                            _entriesStream = null;
-                            _cachedBabyId = null;
-                          });
-                        }
-                      } else if (val == 'account') {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                AccountSettingsScreen(babies: babies),
-                          ),
-                        );
-                      } else if (val == 'signout') {
-                        final nav = Navigator.of(context);
-                        await auth.signOut();
-                        if (!mounted) return;
-                        nav.pushReplacementNamed('/login');
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                        value: 'baby',
-                        child: Row(
-                          children: [
-                            Icon(Icons.child_care, color: Color(0xFF4CAF50)),
-                            SizedBox(width: 8),
-                            Text('Your babies'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuDivider(),
-                      const PopupMenuItem(
-                        value: 'account',
-                        child: Row(
-                          children: [
-                            Icon(Icons.manage_accounts,
-                                color: Color(0xFF4CAF50)),
-                            SizedBox(width: 8),
-                            Text('Account settings'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuDivider(),
-                      const PopupMenuItem(
-                        value: 'signout',
-                        child: Row(
-                          children: [
-                            Icon(Icons.logout, color: Colors.grey),
-                            SizedBox(width: 8),
-                            Text('Sign Out'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              body: Column(
-                children: [
-                  CalendarWidget(
-                    entries: entries,
-                    focusedDay: _focusedDay,
-                    selectedDay: _selectedDay,
-                    onDaySelected: (day) => setState(() {
-                      _selectedDay = day;
-                      _focusedDay = day;
-                    }),
-                    onPageChanged: (day) => setState(() => _focusedDay = day),
-                  ),
-                  const Divider(height: 1),
-                  if (dayEntries.isEmpty)
-                    const Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('🌟', style: TextStyle(fontSize: 40)),
-                            SizedBox(height: 8),
-                            Text(
-                              'No entries for this day',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Tap 💩 to log one!',
-                              style:
-                                  TextStyle(color: Colors.grey, fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    Expanded(
-                      child: Column(
-                        children: [
-                          DayEntriesHeader(
-                            day: _selectedDay,
-                            count: dayEntries.length,
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              itemCount: dayEntries.length,
-                              itemBuilder: (ctx, i) => PoopEntryTile(
-                                entry: dayEntries[i],
-                                onEdit: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => LogPoopScreen(
-                                        baby: baby,
-                                        entry: dayEntries[i],
-                                      ),
-                                    ),
-                                  );
-                                },
-                                onDelete: () async {
-                                  final messenger =
-                                      ScaffoldMessenger.of(context);
-                                  try {
-                                    await firestore.deleteEntry(
-                                        baby.id, dayEntries[i].id);
-                                  } catch (e) {
-                                    if (!mounted) return;
-                                    messenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(friendlyError(e)),
-                                        backgroundColor: Colors.red.shade400,
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
+                          const PopupMenuDivider(),
+                          const PopupMenuItem(
+                            value: 'signout',
+                            child: Row(
+                              children: [
+                                Icon(Icons.logout, color: Colors.grey),
+                                SizedBox(width: 8),
+                                Text('Sign Out'),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                ],
-              ),
-              floatingActionButton: FloatingActionButton.extended(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => LogPoopScreen(
-                        baby: baby,
-                        initialDate: _selectedDay,
+                    ],
+                  ),
+                  body: Column(
+                    children: [
+                      CalendarWidget(
+                        entries: entries,
+                        focusedDay: _focusedDay,
+                        selectedDay: _selectedDay,
+                        onDaySelected: (day) => setState(() {
+                          _selectedDay = day;
+                          _focusedDay = day;
+                        }),
+                        onPageChanged: (day) =>
+                            setState(() => _focusedDay = day),
                       ),
-                    ),
-                  );
-                },
-                icon: const Text('💩', style: TextStyle(fontSize: 20)),
-                label: const Text('Log Poop'),
-              ),
+                      const Divider(height: 1),
+                      if (dayEntries.isEmpty)
+                        const Expanded(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('🌟', style: TextStyle(fontSize: 40)),
+                                SizedBox(height: 8),
+                                Text(
+                                  'No entries for this day',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Tap 💩 to log one!',
+                                  style: TextStyle(
+                                      color: Colors.grey, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Expanded(
+                          child: Column(
+                            children: [
+                              DayEntriesHeader(
+                                day: _selectedDay,
+                                count: dayEntries.length,
+                              ),
+                              Expanded(
+                                child: ListView.builder(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  itemCount: dayEntries.length,
+                                  itemBuilder: (ctx, i) => PoopEntryTile(
+                                    entry: dayEntries[i],
+                                    onEdit: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => LogPoopScreen(
+                                            baby: baby,
+                                            entry: dayEntries[i],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    onDelete: () async {
+                                      final messenger =
+                                          ScaffoldMessenger.of(context);
+                                      try {
+                                        await firestore.deleteEntry(
+                                            baby.id, dayEntries[i].id);
+                                      } catch (e) {
+                                        if (!mounted) return;
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(friendlyError(e)),
+                                            backgroundColor:
+                                                Colors.red.shade400,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  floatingActionButton: FloatingActionButton.extended(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LogPoopScreen(
+                            baby: baby,
+                            initialDate: _selectedDay,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Text('💩', style: TextStyle(fontSize: 20)),
+                    label: const Text('Log Poop'),
+                  ),
+                );
+              },
             );
           },
         );

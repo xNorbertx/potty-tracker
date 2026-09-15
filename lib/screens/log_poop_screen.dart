@@ -133,14 +133,20 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
         );
       } else {
         final auth = context.read<AuthService>();
+        final uid = auth.currentUserId!;
+        final profile = await firestore.getCaregiverProfile(uid);
         await firestore.addEntry(
-          uid: auth.currentUserId!,
+          uid: uid,
           babyId: widget.baby.id,
           timestamp: _selectedDateTime,
           consistency: _selectedConsistency!,
           size: _selectedSize,
           color: _selectedColor,
           notes: notes,
+          loggedByName: profile?.name,
+          loggedByEmail: profile?.email.isNotEmpty == true
+              ? profile!.email
+              : auth.currentUserEmail,
         );
       }
       if (!mounted) return;
@@ -150,7 +156,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
           content: Text(_isEditing
               ? '💩 Poop entry updated!'
               : '💩 Poop logged successfully!'),
-          backgroundColor: Color(0xFF4CAF50),
+          backgroundColor: const Color(0xFF4CAF50),
         ),
       );
     } catch (e) {

@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../models/poop_entry.dart';
 import '../models/consistency.dart';
 import '../models/poop_size.dart';
-import '../models/poop_color.dart';
 
 class PoopEntryTile extends StatelessWidget {
   final PoopEntry entry;
@@ -122,9 +121,13 @@ class PoopEntryTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              const Text(
-                'swipe for actions',
-                style: TextStyle(fontSize: 10, color: Colors.grey),
+              Text(
+                entry.loggedByName?.isNotEmpty == true
+                    ? entry.loggedByName!
+                    : entry.loggedByEmail?.isNotEmpty == true
+                        ? entry.loggedByEmail!
+                        : 'Caregiver',
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
               ),
             ],
           ),

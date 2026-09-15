@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../models/baby.dart';
+import '../models/caregiver_profile.dart';
 import '../models/poop_entry.dart';
 import '../models/consistency.dart';
 import '../models/poop_size.dart';
@@ -27,6 +28,24 @@ class FirestoreService {
 
   CollectionReference<Map<String, dynamic>> get _babiesRef =>
       _db.collection('babies');
+
+  CollectionReference<Map<String, dynamic>> get _profilesRef =>
+      _db.collection('caregiver_profiles');
+
+  Stream<CaregiverProfile?> caregiverProfileStream(String uid) =>
+      _profilesRef.doc(uid).snapshots().map(
+            (snapshot) => snapshot.exists
+                ? CaregiverProfile.fromFirestore(snapshot)
+                : null,
+          );
+
+  Future<CaregiverProfile?> getCaregiverProfile(String uid) async {
+    final snapshot = await _profilesRef.doc(uid).get();
+    return snapshot.exists ? CaregiverProfile.fromFirestore(snapshot) : null;
+  }
+
+  Future<void> saveCaregiverProfile(CaregiverProfile profile) =>
+      _profilesRef.doc(profile.uid).set(profile.toFirestore());
 
   Stream<List<Baby>> babiesStream(String uid) {
     return _babiesRef
@@ -166,6 +185,8 @@ class FirestoreService {
     required String babyId,
     required DateTime timestamp,
     required Consistency consistency,
+    String? loggedByName,
+    String? loggedByEmail,
     PoopSize? size,
     PoopColor? color,
     String? notes,
@@ -180,6 +201,8 @@ class FirestoreService {
       color: color,
       notes: notes,
       loggedBy: uid,
+      loggedByName: loggedByName,
+      loggedByEmail: loggedByEmail,
       createdAt: DateTime.now(),
     );
     await _entriesRef(babyId).doc(id).set(entry.toFirestore());
