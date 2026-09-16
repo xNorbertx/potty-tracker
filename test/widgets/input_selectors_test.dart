@@ -22,6 +22,18 @@ void main() {
     expect(selected, Consistency.watery);
   });
 
+  testWidgets('consistency selector includes the pasty option', (tester) async {
+    Consistency? selected;
+    await tester.pumpWidget(app(ConsistencySelector(
+      selected: null,
+      onSelected: (value) => selected = value,
+    )));
+
+    await tester.tap(find.text('Pasty'));
+
+    expect(selected, Consistency.pasty);
+  });
+
   testWidgets('size selector reports the tapped size', (tester) async {
     PoopSize? selected;
     await tester.pumpWidget(app(SizeSelector(
