@@ -92,23 +92,15 @@ class FirestoreService {
     final babyRef = _babiesRef.doc(babyId);
 
     try {
-      final babyDoc = await babyRef.get();
-      if (!babyDoc.exists) return null;
-      final baby = Baby.fromFirestore(babyDoc);
-      if (baby.memberUids.contains(uid)) return baby;
-
-      // A code is consumed when it is used and immediately replaced. Keeping
-      // this in one batch lets the rules prove that a new caregiver possessed
-      // the previous code, without allowing arbitrary membership changes.
+      // A prospective caregiver cannot read a private diary before joining it.
+      // Use atomic field transforms instead; the rules validate the resulting
+      // membership and code rotation in the same batch.
       final nextShareCode = _generateShareCode();
-      final memberLabels = {...baby.memberLabels};
-      if (caregiverLabel != null && caregiverLabel.isNotEmpty) {
-        memberLabels[uid] = caregiverLabel;
-      }
       final batch = _db.batch();
       batch.update(babyRef, {
-        'memberUids': [...baby.memberUids, uid],
-        'memberLabels': memberLabels,
+        'memberUids': FieldValue.arrayUnion([uid]),
+        'memberLabels.$uid':
+            caregiverLabel?.isNotEmpty == true ? caregiverLabel : 'Caregiver',
         'shareCode': nextShareCode,
       });
       batch.delete(codeDoc.reference);
@@ -118,11 +110,9 @@ class FirestoreService {
       );
       await batch.commit();
 
-      return baby.copyWith(
-        memberUids: [...baby.memberUids, uid],
-        memberLabels: memberLabels,
-        shareCode: nextShareCode,
-      );
+      final joinedBaby = await babyRef.get();
+      if (!joinedBaby.exists) return null;
+      return Baby.fromFirestore(joinedBaby);
     } on FirebaseException catch (e) {
       if (e.code == 'not-found') return null;
       rethrow;
