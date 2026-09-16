@@ -97,12 +97,18 @@ class FirestoreService {
       // membership and code rotation in the same batch.
       final nextShareCode = _generateShareCode();
       final batch = _db.batch();
-      batch.update(babyRef, {
-        'memberUids': FieldValue.arrayUnion([uid]),
-        'memberLabels.$uid':
-            caregiverLabel?.isNotEmpty == true ? caregiverLabel : 'Caregiver',
-        'shareCode': nextShareCode,
-      });
+      batch.set(
+          babyRef,
+          {
+            'memberUids': FieldValue.arrayUnion([uid]),
+            'memberLabels': {
+              uid: caregiverLabel?.isNotEmpty == true
+                  ? caregiverLabel
+                  : 'Caregiver',
+            },
+            'shareCode': nextShareCode,
+          },
+          SetOptions(merge: true));
       batch.delete(codeDoc.reference);
       batch.set(
         _db.collection('share_codes').doc(nextShareCode),
