@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
 import '../models/baby.dart';
 import '../models/poop_entry.dart';
 import '../services/auth_service.dart';
+import '../services/diary_pdf_export_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
 
@@ -19,6 +21,7 @@ class BabyOverviewScreen extends StatefulWidget {
 }
 
 class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
+  bool _exporting = false;
   @override
   void initState() {
     super.initState();
@@ -85,6 +88,63 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportDiary(Baby baby, List<PoopEntry> entries) async {
+    final period = await showModalBottomSheet<DiaryExportPeriod>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Export diary summary',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('Choose the period to include in the PDF.'),
+              const SizedBox(height: 12),
+              ...DiaryExportPeriod.values.map(
+                (value) => ListTile(
+                  leading: const Icon(Icons.picture_as_pdf_outlined,
+                      color: Color(0xFF4CAF50)),
+                  title: Text(value.label),
+                  onTap: () => Navigator.pop(sheetContext, value),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (period == null || !mounted) return;
+
+    setState(() => _exporting = true);
+    try {
+      final now = DateTime.now();
+      final bytes = await const DiaryPdfExportService().build(
+        baby: baby,
+        entries: entries,
+        period: period,
+        now: now,
+      );
+      final safeName = baby.name.replaceAll(RegExp('[^a-zA-Z0-9]+'), '_');
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename:
+            '${safeName}_diary_${DateFormat('yyyy-MM-dd').format(now)}.pdf',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(friendlyError(error)),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
   }
 
   @override
@@ -158,6 +218,21 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                     onPressed: () => _showShareDialog(context, currentBaby),
                     icon: const Icon(Icons.person_add_alt_1),
                     label: const Text('Invite a caregiver'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: _exporting
+                        ? null
+                        : () => _exportDiary(currentBaby, entries),
+                    icon: _exporting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download_outlined),
+                    label: Text(
+                        _exporting ? 'Preparing PDF...' : 'Export diary PDF'),
                   ),
                   const SizedBox(height: 28),
                   const Text(
