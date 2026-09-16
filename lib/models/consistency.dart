@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 enum Consistency {
   soft,
+  formed,
   watery,
   hard,
 }
@@ -11,6 +12,8 @@ extension ConsistencyExtension on Consistency {
     switch (this) {
       case Consistency.soft:
         return '💛';
+      case Consistency.formed:
+        return '💩';
       case Consistency.watery:
         return '💧';
       case Consistency.hard:
@@ -22,6 +25,8 @@ extension ConsistencyExtension on Consistency {
     switch (this) {
       case Consistency.soft:
         return 'Soft/Mushy';
+      case Consistency.formed:
+        return 'Formed';
       case Consistency.watery:
         return 'Watery/Runny';
       case Consistency.hard:
@@ -33,6 +38,8 @@ extension ConsistencyExtension on Consistency {
     switch (this) {
       case Consistency.soft:
         return const Color(0xFFFDD835);
+      case Consistency.formed:
+        return const Color(0xFF6D4C41);
       case Consistency.watery:
         return const Color(0xFF29B6F6);
       case Consistency.hard:
