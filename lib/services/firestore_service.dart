@@ -150,10 +150,9 @@ class FirestoreService {
     for (final baby in babies) {
       final otherMembers = baby.memberUids.where((id) => id != uid).toList();
       if (otherMembers.isNotEmpty) {
-        final updatedLabels = {...baby.memberLabels}..remove(uid);
         await _babiesRef.doc(baby.id).update({
           'memberUids': otherMembers,
-          'memberLabels': updatedLabels,
+          'memberLabels.$uid': FieldValue.delete(),
         });
       } else {
         await deleteBaby(baby);
@@ -168,10 +167,9 @@ class FirestoreService {
     if (otherMembers.isEmpty) {
       throw StateError('The last caregiver cannot leave this diary.');
     }
-    final updatedLabels = {...baby.memberLabels}..remove(uid);
     await _babiesRef.doc(baby.id).update({
       'memberUids': otherMembers,
-      'memberLabels': updatedLabels,
+      'memberLabels.$uid': FieldValue.delete(),
     });
   }
 
