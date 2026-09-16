@@ -62,8 +62,8 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
                 await context
                     .read<FirestoreService>()
                     .updateBabyName(baby.id, controller.text.trim());
-                if (!mounted || !dialogContext.mounted) return;
-                Navigator.pop(dialogContext);
+                if (!mounted) return;
+                Navigator.of(context, rootNavigator: true).pop();
                 setState(() {
                   _babies = _babies
                       .map((item) => item.id == baby.id
@@ -128,8 +128,8 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
                       caregiverLabel:
                           context.read<AuthService>().currentUserEmail,
                     );
-                if (!mounted || !dialogContext.mounted) return;
-                Navigator.pop(dialogContext);
+                if (!mounted) return;
+                Navigator.of(context, rootNavigator: true).pop();
                 setState(() => _babies = [..._babies, baby]);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Baby added.')),
@@ -187,22 +187,24 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
               final uid = auth.currentUserId;
               if (uid == null) return;
               try {
-                final baby = await context.read<FirestoreService>().joinBabyWithCode(
-                      uid,
-                      controller.text,
-                      caregiverLabel: auth.currentUserEmail,
-                    );
-                if (!mounted || !dialogContext.mounted) return;
+                final baby =
+                    await context.read<FirestoreService>().joinBabyWithCode(
+                          uid,
+                          controller.text,
+                          caregiverLabel: auth.currentUserEmail,
+                        );
+                if (!mounted) return;
                 if (baby == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Invite code not found or already used.'),
+                      content:
+                          const Text('Invite code not found or already used.'),
                       backgroundColor: Colors.red.shade400,
                     ),
                   );
                   return;
                 }
-                Navigator.pop(dialogContext);
+                Navigator.of(context, rootNavigator: true).pop();
                 setState(() {
                   if (_babies.every((existing) => existing.id != baby.id)) {
                     _babies = [..._babies, baby];
@@ -236,7 +238,8 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(isShared ? 'Leave ${baby.name}\'s diary?' : 'Remove ${baby.name}?'),
+        title: Text(
+            isShared ? 'Leave ${baby.name}\'s diary?' : 'Remove ${baby.name}?'),
         content: Text(
           isShared
               ? 'You will lose access to this diary. The other caregivers and all poop logs will remain.'
