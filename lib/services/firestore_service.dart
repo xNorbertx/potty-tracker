@@ -92,25 +92,23 @@ class FirestoreService {
     final babyRef = _babiesRef.doc(babyId);
 
     try {
-      final babyDoc = await babyRef.get();
-      if (!babyDoc.exists) return null;
-      final baby = Baby.fromFirestore(babyDoc);
-      if (baby.memberUids.contains(uid)) return baby;
-
-      // A code is consumed when it is used and immediately replaced. Keeping
-      // this in one batch lets the rules prove that a new caregiver possessed
-      // the previous code, without allowing arbitrary membership changes.
+      // A prospective caregiver cannot read a private diary before joining it.
+      // Use atomic field transforms instead; the rules validate the resulting
+      // membership and code rotation in the same batch.
       final nextShareCode = _generateShareCode();
-      final memberLabels = {...baby.memberLabels};
-      if (caregiverLabel != null && caregiverLabel.isNotEmpty) {
-        memberLabels[uid] = caregiverLabel;
-      }
       final batch = _db.batch();
-      batch.update(babyRef, {
-        'memberUids': [...baby.memberUids, uid],
-        'memberLabels': memberLabels,
-        'shareCode': nextShareCode,
-      });
+      batch.set(
+          babyRef,
+          {
+            'memberUids': FieldValue.arrayUnion([uid]),
+            'memberLabels': {
+              uid: caregiverLabel?.isNotEmpty == true
+                  ? caregiverLabel
+                  : 'Caregiver',
+            },
+            'shareCode': nextShareCode,
+          },
+          SetOptions(merge: true));
       batch.delete(codeDoc.reference);
       batch.set(
         _db.collection('share_codes').doc(nextShareCode),
@@ -118,11 +116,9 @@ class FirestoreService {
       );
       await batch.commit();
 
-      return baby.copyWith(
-        memberUids: [...baby.memberUids, uid],
-        memberLabels: memberLabels,
-        shareCode: nextShareCode,
-      );
+      final joinedBaby = await babyRef.get();
+      if (!joinedBaby.exists) return null;
+      return Baby.fromFirestore(joinedBaby);
     } on FirebaseException catch (e) {
       if (e.code == 'not-found') return null;
       rethrow;
@@ -154,10 +150,9 @@ class FirestoreService {
     for (final baby in babies) {
       final otherMembers = baby.memberUids.where((id) => id != uid).toList();
       if (otherMembers.isNotEmpty) {
-        final updatedLabels = {...baby.memberLabels}..remove(uid);
         await _babiesRef.doc(baby.id).update({
           'memberUids': otherMembers,
-          'memberLabels': updatedLabels,
+          'memberLabels.$uid': FieldValue.delete(),
         });
       } else {
         await deleteBaby(baby);
@@ -172,10 +167,9 @@ class FirestoreService {
     if (otherMembers.isEmpty) {
       throw StateError('The last caregiver cannot leave this diary.');
     }
-    final updatedLabels = {...baby.memberLabels}..remove(uid);
     await _babiesRef.doc(baby.id).update({
       'memberUids': otherMembers,
-      'memberLabels': updatedLabels,
+      'memberLabels.$uid': FieldValue.delete(),
     });
   }
 
