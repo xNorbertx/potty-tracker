@@ -78,8 +78,10 @@ void main() {
     test('fromString returns matching colour', () {
       expect(
         PoopColorExtension.fromString('mustard_yellow'),
-        PoopColor.mustardYellow,
+        PoopColor.yellow,
       );
+      expect(PoopColorExtension.fromString('frothy_green'), PoopColor.green);
+      expect(PoopColorExtension.fromString('chalk_white'), PoopColor.paleWhite);
       expect(PoopColorExtension.fromString('does-not-exist'), isNull);
     });
   });
