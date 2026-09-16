@@ -18,6 +18,11 @@ void main() {
       expect(Consistency.formed.label, 'Formed');
     });
 
+    test('pasty has correct emoji and label', () {
+      expect(Consistency.pasty.emoji, '🟤');
+      expect(Consistency.pasty.label, 'Pasty');
+    });
+
     test('watery has correct emoji and label', () {
       expect(Consistency.watery.emoji, '💧');
       expect(Consistency.watery.label, 'Watery/Runny');
@@ -31,6 +36,7 @@ void main() {
     test('fromString returns correct consistency', () {
       expect(ConsistencyExtension.fromString('soft'), Consistency.soft);
       expect(ConsistencyExtension.fromString('formed'), Consistency.formed);
+      expect(ConsistencyExtension.fromString('pasty'), Consistency.pasty);
       expect(ConsistencyExtension.fromString('watery'), Consistency.watery);
       expect(ConsistencyExtension.fromString('hard'), Consistency.hard);
       expect(ConsistencyExtension.fromString('unusual'), Consistency.soft);
