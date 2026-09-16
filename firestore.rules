@@ -31,7 +31,7 @@ service cloud.firestore {
     }
 
     function isRoutineBabyUpdate(babyId) {
-      return isBabyMember(babyId) &&
+      return isSignedIn() && request.auth.uid in resource.data.memberUids &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'memberLabels'
         ]) &&
@@ -41,7 +41,7 @@ service cloud.firestore {
     }
 
     function isLeavingBaby(babyId) {
-      return isBabyMember(babyId) &&
+      return isSignedIn() && request.auth.uid in resource.data.memberUids &&
         resource.data.memberUids.size() > 1 &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'memberUids', 'memberLabels'
@@ -56,7 +56,7 @@ service cloud.firestore {
     function isJoiningBaby(babyId) {
       let before = babyBefore(babyId).data;
       let after = babyAfter(babyId).data;
-      return isSignedIn() && !isBabyMember(babyId) &&
+      return isSignedIn() && !(request.auth.uid in before.memberUids) &&
         after.diff(before).affectedKeys().hasOnly([
           'memberUids', 'memberLabels', 'shareCode'
         ]) &&
@@ -75,9 +75,11 @@ service cloud.firestore {
 
     match /babies/{babyId} {
       allow create: if isSignedIn() && isValidBabyCreate();
-      allow read: if isBabyMember(babyId);
+      allow read: if isSignedIn() && request.auth.uid in resource.data.memberUids;
       allow update: if isRoutineBabyUpdate(babyId) || isLeavingBaby(babyId) || isJoiningBaby(babyId);
-      allow delete: if isBabyMember(babyId) && resource.data.memberUids.size() == 1;
+      allow delete: if isSignedIn() &&
+        request.auth.uid in resource.data.memberUids &&
+        resource.data.memberUids.size() == 1;
 
       match /entries/{entryId} {
         allow read, delete: if isBabyMember(babyId);
