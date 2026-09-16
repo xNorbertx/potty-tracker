@@ -152,6 +152,83 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
     controller.dispose();
   }
 
+  Future<void> _joinBaby() async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Join a shared baby'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 6,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              labelText: 'Invite code',
+              hintText: 'ABC123',
+            ),
+            validator: (value) => value == null || value.trim().length != 6
+                ? 'Enter the 6-character invite code'
+                : null,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final auth = context.read<AuthService>();
+              final uid = auth.currentUserId;
+              if (uid == null) return;
+              try {
+                final baby = await context.read<FirestoreService>().joinBabyWithCode(
+                      uid,
+                      controller.text,
+                      caregiverLabel: auth.currentUserEmail,
+                    );
+                if (!mounted || !dialogContext.mounted) return;
+                if (baby == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Invite code not found or already used.'),
+                      backgroundColor: Colors.red.shade400,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext);
+                setState(() {
+                  if (_babies.every((existing) => existing.id != baby.id)) {
+                    _babies = [..._babies, baby];
+                  }
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('You joined ${baby.name}\'s diary.')),
+                );
+              } catch (error) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(friendlyError(error)),
+                    backgroundColor: Colors.red.shade400,
+                  ),
+                );
+              }
+            },
+            child: const Text('Join baby'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+  }
+
   Future<void> _deleteBaby(Baby baby) async {
     final uid = context.read<AuthService>().currentUserId;
     if (uid == null) return;
@@ -269,6 +346,12 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
               onPressed: _addBaby,
               icon: const Icon(Icons.add),
               label: const Text('Add another baby'),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _joinBaby,
+              icon: const Icon(Icons.group_add_outlined),
+              label: const Text('Join a baby with an invite code'),
             ),
           ],
         ),

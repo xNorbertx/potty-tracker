@@ -473,7 +473,7 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
                 if (baby == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Invite code not found.'),
+                      content: const Text('Invite code not found or already used.'),
                       backgroundColor: Colors.red.shade400,
                     ),
                   );
