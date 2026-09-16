@@ -152,13 +152,95 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
     controller.dispose();
   }
 
+  Future<void> _joinBaby() async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Join a shared baby'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 6,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              labelText: 'Invite code',
+              hintText: 'ABC123',
+            ),
+            validator: (value) => value == null || value.trim().length != 6
+                ? 'Enter the 6-character invite code'
+                : null,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final auth = context.read<AuthService>();
+              final uid = auth.currentUserId;
+              if (uid == null) return;
+              try {
+                final baby = await context.read<FirestoreService>().joinBabyWithCode(
+                      uid,
+                      controller.text,
+                      caregiverLabel: auth.currentUserEmail,
+                    );
+                if (!mounted || !dialogContext.mounted) return;
+                if (baby == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Invite code not found or already used.'),
+                      backgroundColor: Colors.red.shade400,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext);
+                setState(() {
+                  if (_babies.every((existing) => existing.id != baby.id)) {
+                    _babies = [..._babies, baby];
+                  }
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('You joined ${baby.name}\'s diary.')),
+                );
+              } catch (error) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(friendlyError(error)),
+                    backgroundColor: Colors.red.shade400,
+                  ),
+                );
+              }
+            },
+            child: const Text('Join baby'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+  }
+
   Future<void> _deleteBaby(Baby baby) async {
+    final uid = context.read<AuthService>().currentUserId;
+    if (uid == null) return;
+    final isShared = baby.memberUids.any((member) => member != uid);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Remove ${baby.name}?'),
-        content: const Text(
-          'This will permanently remove this baby and all poop logs for them. This cannot be undone.',
+        title: Text(isShared ? 'Leave ${baby.name}\'s diary?' : 'Remove ${baby.name}?'),
+        content: Text(
+          isShared
+              ? 'You will lose access to this diary. The other caregivers and all poop logs will remain.'
+              : 'This will permanently remove this baby and all poop logs for them. This cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -169,7 +251,7 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
             style:
                 ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Remove baby'),
+            child: Text(isShared ? 'Leave diary' : 'Remove baby'),
           ),
         ],
       ),
@@ -177,12 +259,20 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      await context.read<FirestoreService>().deleteBaby(baby);
+      if (isShared) {
+        await context.read<FirestoreService>().leaveBaby(baby: baby, uid: uid);
+      } else {
+        await context.read<FirestoreService>().deleteBaby(baby);
+      }
       if (!mounted) return;
       setState(
           () => _babies = _babies.where((item) => item.id != baby.id).toList());
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Baby and poop logs removed.')),
+        SnackBar(
+          content: Text(isShared
+              ? 'You no longer have access to this diary.'
+              : 'Baby and poop logs removed.'),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -256,6 +346,12 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
               onPressed: _addBaby,
               icon: const Icon(Icons.add),
               label: const Text('Add another baby'),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _joinBaby,
+              icon: const Icon(Icons.group_add_outlined),
+              label: const Text('Join a baby with an invite code'),
             ),
           ],
         ),

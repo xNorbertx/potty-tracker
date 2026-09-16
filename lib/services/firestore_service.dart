@@ -92,26 +92,41 @@ class FirestoreService {
     final babyRef = _babiesRef.doc(babyId);
 
     try {
-      await babyRef.update({
-        'memberUids': FieldValue.arrayUnion([uid]),
+      final babyDoc = await babyRef.get();
+      if (!babyDoc.exists) return null;
+      final baby = Baby.fromFirestore(babyDoc);
+      if (baby.memberUids.contains(uid)) return baby;
+
+      // A code is consumed when it is used and immediately replaced. Keeping
+      // this in one batch lets the rules prove that a new caregiver possessed
+      // the previous code, without allowing arbitrary membership changes.
+      final nextShareCode = _generateShareCode();
+      final memberLabels = {...baby.memberLabels};
+      if (caregiverLabel != null && caregiverLabel.isNotEmpty) {
+        memberLabels[uid] = caregiverLabel;
+      }
+      final batch = _db.batch();
+      batch.update(babyRef, {
+        'memberUids': [...baby.memberUids, uid],
+        'memberLabels': memberLabels,
+        'shareCode': nextShareCode,
       });
+      batch.delete(codeDoc.reference);
+      batch.set(
+        _db.collection('share_codes').doc(nextShareCode),
+        {'babyId': babyId},
+      );
+      await batch.commit();
+
+      return baby.copyWith(
+        memberUids: [...baby.memberUids, uid],
+        memberLabels: memberLabels,
+        shareCode: nextShareCode,
+      );
     } on FirebaseException catch (e) {
       if (e.code == 'not-found') return null;
       rethrow;
     }
-
-    final updatedDoc = await babyRef.get();
-    if (!updatedDoc.exists) return null;
-    final baby = Baby.fromFirestore(updatedDoc);
-    if (caregiverLabel != null && caregiverLabel.isNotEmpty) {
-      await babyRef.update({
-        'memberLabels': {...baby.memberLabels, uid: caregiverLabel},
-      });
-      return baby.copyWith(
-        memberLabels: {...baby.memberLabels, uid: caregiverLabel},
-      );
-    }
-    return baby;
   }
 
   Stream<Baby?> babyStream(String babyId) =>
@@ -139,13 +154,29 @@ class FirestoreService {
     for (final baby in babies) {
       final otherMembers = baby.memberUids.where((id) => id != uid).toList();
       if (otherMembers.isNotEmpty) {
+        final updatedLabels = {...baby.memberLabels}..remove(uid);
         await _babiesRef.doc(baby.id).update({
-          'memberUids': FieldValue.arrayRemove([uid]),
+          'memberUids': otherMembers,
+          'memberLabels': updatedLabels,
         });
       } else {
         await deleteBaby(baby);
       }
     }
+  }
+
+  /// Removes the signed-in caregiver from a shared diary without affecting the
+  /// remaining caregivers or the diary's entries.
+  Future<void> leaveBaby({required Baby baby, required String uid}) async {
+    final otherMembers = baby.memberUids.where((id) => id != uid).toList();
+    if (otherMembers.isEmpty) {
+      throw StateError('The last caregiver cannot leave this diary.');
+    }
+    final updatedLabels = {...baby.memberLabels}..remove(uid);
+    await _babiesRef.doc(baby.id).update({
+      'memberUids': otherMembers,
+      'memberLabels': updatedLabels,
+    });
   }
 
   Future<void> deleteBaby(Baby baby) async {

@@ -79,6 +79,20 @@ void main() {
       expect(joined, isNotNull);
       expect(joined!.memberUids, containsAll(['user1', 'user2']));
       expect(joined.memberLabels['user2'], 'other@example.com');
+      expect(joined.shareCode, isNot(baby.shareCode));
+      expect(
+        (await fakeFirestore.collection('share_codes').doc(baby.shareCode).get())
+            .exists,
+        isFalse,
+      );
+      expect(
+        (await fakeFirestore.collection('share_codes').doc(joined.shareCode).get())
+            .data()?['babyId'],
+        baby.id,
+      );
+
+      final secondUse = await service.joinBabyWithCode('user3', baby.shareCode);
+      expect(secondUse, isNull);
     });
 
     test('joinBabyWithCode ignores casing and surrounding whitespace',
@@ -123,6 +137,19 @@ void main() {
       final saved = await fakeFirestore.collection('babies').doc(baby.id).get();
       expect(saved.exists, isTrue);
       expect(saved.data()?['memberUids'], ['parent-1']);
+      expect(saved.data()?['memberLabels'], isNot(contains('parent-2')));
+    });
+
+    test('leaveBaby removes only the current caregiver from a shared baby',
+        () async {
+      final baby = await service.addBaby('parent-1', 'Alice');
+      final sharedBaby = await service.joinBabyWithCode('parent-2', baby.shareCode);
+
+      await service.leaveBaby(baby: sharedBaby!, uid: 'parent-2');
+
+      final saved = await fakeFirestore.collection('babies').doc(baby.id).get();
+      expect(saved.data()?['memberUids'], ['parent-1']);
+      expect(saved.data()?['memberLabels'], isNot(contains('parent-2')));
     });
 
     test('removeAccountData deletes a sole-member baby and its data', () async {

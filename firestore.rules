@@ -5,30 +5,102 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function babyBefore(babyId) {
+      return get(/databases/$(database)/documents/babies/$(babyId));
+    }
+
+    function babyAfter(babyId) {
+      return getAfter(/databases/$(database)/documents/babies/$(babyId));
+    }
+
     function isBabyMember(babyId) {
       return isSignedIn() &&
-        request.auth.uid in get(/databases/$(database)/documents/babies/$(babyId)).data.memberUids;
+        request.auth.uid in babyBefore(babyId).data.memberUids;
+    }
+
+    function isValidBabyCreate() {
+      return request.resource.data.keys().hasOnly([
+          'name', 'ownerUid', 'memberUids', 'memberLabels', 'shareCode', 'createdAt'
+        ]) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.memberUids.size() == 1 &&
+        request.resource.data.memberUids[0] == request.auth.uid &&
+        request.resource.data.memberLabels.keys().hasOnly([request.auth.uid]) &&
+        request.resource.data.shareCode is string &&
+        request.resource.data.shareCode.size() == 6;
+    }
+
+    function isRoutineBabyUpdate(babyId) {
+      return isBabyMember(babyId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'memberLabels'
+        ]) &&
+        request.resource.data.memberUids == resource.data.memberUids &&
+        request.resource.data.memberLabels.diff(resource.data.memberLabels)
+          .affectedKeys().hasOnly([request.auth.uid]);
+    }
+
+    function isLeavingBaby(babyId) {
+      return isBabyMember(babyId) &&
+        resource.data.memberUids.size() > 1 &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'memberUids', 'memberLabels'
+        ]) &&
+        request.resource.data.memberUids.size() == resource.data.memberUids.size() - 1 &&
+        request.resource.data.memberUids.hasOnly(resource.data.memberUids) &&
+        !request.resource.data.memberUids.hasAny([request.auth.uid]) &&
+        request.resource.data.memberLabels.diff(resource.data.memberLabels)
+          .affectedKeys().hasOnly([request.auth.uid]);
+    }
+
+    function isJoiningBaby(babyId) {
+      let before = babyBefore(babyId).data;
+      let after = babyAfter(babyId).data;
+      return isSignedIn() && !isBabyMember(babyId) &&
+        after.diff(before).affectedKeys().hasOnly([
+          'memberUids', 'memberLabels', 'shareCode'
+        ]) &&
+        after.memberUids.size() == before.memberUids.size() + 1 &&
+        after.memberUids.hasAll(before.memberUids) &&
+        after.memberUids.hasAny([request.auth.uid]) &&
+        after.memberLabels.diff(before.memberLabels)
+          .affectedKeys().hasOnly([request.auth.uid]) &&
+        after.shareCode is string &&
+        after.shareCode.size() == 6 &&
+        after.shareCode != before.shareCode &&
+        !existsAfter(/databases/$(database)/documents/share_codes/$(before.shareCode)) &&
+        existsAfter(/databases/$(database)/documents/share_codes/$(after.shareCode)) &&
+        getAfter(/databases/$(database)/documents/share_codes/$(after.shareCode)).data.babyId == babyId;
     }
 
     match /babies/{babyId} {
-      allow create: if isSignedIn() &&
-        request.auth.uid in request.resource.data.memberUids;
-
-      allow read, delete: if isSignedIn() &&
-        request.auth.uid in resource.data.memberUids;
-
-      allow update: if isSignedIn() &&
-        request.auth.uid in request.resource.data.memberUids;
+      allow create: if isSignedIn() && isValidBabyCreate();
+      allow read: if isBabyMember(babyId);
+      allow update: if isRoutineBabyUpdate(babyId) || isLeavingBaby(babyId) || isJoiningBaby(babyId);
+      allow delete: if isBabyMember(babyId) && resource.data.memberUids.size() == 1;
 
       match /entries/{entryId} {
-        allow read, write: if isBabyMember(babyId);
+        allow read, delete: if isBabyMember(babyId);
+        allow create: if isBabyMember(babyId) &&
+          request.resource.data.babyId == babyId &&
+          request.resource.data.loggedBy == request.auth.uid;
+        allow update: if isBabyMember(babyId) &&
+          request.resource.data.babyId == resource.data.babyId &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.loggedBy == request.auth.uid;
       }
     }
 
     match /share_codes/{code} {
-      allow read, create: if isSignedIn();
+      allow get: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasOnly(['babyId']) &&
+        request.resource.data.babyId is string &&
+        request.auth.uid in babyAfter(request.resource.data.babyId).data.memberUids;
       allow delete: if isSignedIn() &&
-        isBabyMember(resource.data.babyId);
+        (isJoiningBaby(resource.data.babyId) ||
+         (!existsAfter(/databases/$(database)/documents/babies/$(resource.data.babyId)) &&
+          isBabyMember(resource.data.babyId)));
     }
 
     match /caregiver_profiles/{uid} {
