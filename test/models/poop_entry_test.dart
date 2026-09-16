@@ -13,6 +13,11 @@ void main() {
       expect(Consistency.soft.label, 'Soft/Mushy');
     });
 
+    test('formed has correct emoji and label', () {
+      expect(Consistency.formed.emoji, '💩');
+      expect(Consistency.formed.label, 'Formed');
+    });
+
     test('watery has correct emoji and label', () {
       expect(Consistency.watery.emoji, '💧');
       expect(Consistency.watery.label, 'Watery/Runny');
@@ -23,16 +28,12 @@ void main() {
       expect(Consistency.hard.label, 'Hard/Pellets');
     });
 
-    test('unusual has correct emoji and label', () {
-      expect(Consistency.unusual.emoji, '🌈');
-      expect(Consistency.unusual.label, 'Unusual Color');
-    });
-
     test('fromString returns correct consistency', () {
       expect(ConsistencyExtension.fromString('soft'), Consistency.soft);
+      expect(ConsistencyExtension.fromString('formed'), Consistency.formed);
       expect(ConsistencyExtension.fromString('watery'), Consistency.watery);
       expect(ConsistencyExtension.fromString('hard'), Consistency.hard);
-      expect(ConsistencyExtension.fromString('unusual'), Consistency.unusual);
+      expect(ConsistencyExtension.fromString('unusual'), Consistency.soft);
     });
 
     test('fromString with unknown value returns soft', () {
