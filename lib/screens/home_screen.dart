@@ -410,8 +410,8 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
                   controller.text.trim(),
                   caregiverLabel: widget.auth.currentUserEmail,
                 );
-                if (!mounted || !dialogContext.mounted) return;
-                Navigator.pop(dialogContext);
+                if (!mounted) return;
+                Navigator.of(context, rootNavigator: true).pop();
               } catch (error) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -469,17 +469,18 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
                   controller.text,
                   caregiverLabel: widget.auth.currentUserEmail,
                 );
-                if (!mounted || !dialogContext.mounted) return;
+                if (!mounted) return;
                 if (baby == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Invite code not found or already used.'),
+                      content:
+                          const Text('Invite code not found or already used.'),
                       backgroundColor: Colors.red.shade400,
                     ),
                   );
                   return;
                 }
-                Navigator.pop(dialogContext);
+                Navigator.of(context, rootNavigator: true).pop();
               } catch (error) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
