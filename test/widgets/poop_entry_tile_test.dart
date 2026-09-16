@@ -14,7 +14,7 @@ void main() {
     timestamp: DateTime(2024, 6, 15, 9, 5),
     consistency: Consistency.soft,
     size: PoopSize.medium,
-    color: PoopColor.mustardYellow,
+    color: PoopColor.yellow,
     notes: 'After breakfast',
     createdAt: DateTime(2024, 6, 15),
   );

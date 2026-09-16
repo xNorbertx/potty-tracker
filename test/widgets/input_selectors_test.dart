@@ -57,9 +57,9 @@ void main() {
 
     await tester.tap(find.byType(DropdownButtonFormField<PoopColor>));
     await tester.pumpAndSettle();
-    expect(find.text('Mustard yellow'), findsOneWidget);
+    expect(find.text('Yellow / mustard'), findsOneWidget);
 
-    await tester.tap(find.text('Mustard yellow').last);
-    expect(selected, PoopColor.mustardYellow);
+    await tester.tap(find.text('Yellow / mustard').last);
+    expect(selected, PoopColor.yellow);
   });
 }
