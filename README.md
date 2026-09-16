@@ -156,7 +156,8 @@ service cloud.firestore {
 
 #### Automatic rule deployment
 
-After a PR is merged into `main`, the **Deploy Firestore rules** workflow deploys
+The **Deploy Firestore rules** workflow first compiles rule changes in the
+Firestore Emulator for every PR. After a PR is merged into `main`, it deploys
 the committed rules whenever `firestore.rules`, `firebase.json`, or `.firebaserc`
 changes. It deploys rules only; it does not alter Firestore data.
 

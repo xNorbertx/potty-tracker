@@ -153,12 +153,17 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
   }
 
   Future<void> _deleteBaby(Baby baby) async {
+    final uid = context.read<AuthService>().currentUserId;
+    if (uid == null) return;
+    final isShared = baby.memberUids.any((member) => member != uid);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Remove ${baby.name}?'),
-        content: const Text(
-          'This will permanently remove this baby and all poop logs for them. This cannot be undone.',
+        title: Text(isShared ? 'Leave ${baby.name}\'s diary?' : 'Remove ${baby.name}?'),
+        content: Text(
+          isShared
+              ? 'You will lose access to this diary. The other caregivers and all poop logs will remain.'
+              : 'This will permanently remove this baby and all poop logs for them. This cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -169,7 +174,7 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
             style:
                 ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Remove baby'),
+            child: Text(isShared ? 'Leave diary' : 'Remove baby'),
           ),
         ],
       ),
@@ -177,12 +182,20 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      await context.read<FirestoreService>().deleteBaby(baby);
+      if (isShared) {
+        await context.read<FirestoreService>().leaveBaby(baby: baby, uid: uid);
+      } else {
+        await context.read<FirestoreService>().deleteBaby(baby);
+      }
       if (!mounted) return;
       setState(
           () => _babies = _babies.where((item) => item.id != baby.id).toList());
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Baby and poop logs removed.')),
+        SnackBar(
+          content: Text(isShared
+              ? 'You no longer have access to this diary.'
+              : 'Baby and poop logs removed.'),
+        ),
       );
     } catch (error) {
       if (!mounted) return;

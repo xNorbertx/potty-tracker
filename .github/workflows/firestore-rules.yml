@@ -1,6 +1,13 @@
 name: Deploy Firestore rules
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - firebase.json
+      - .firebaserc
+      - .github/workflows/firestore-rules.yml
   push:
     branches: [main]
     paths:
@@ -18,8 +25,28 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    name: Compile Firestore rules
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+      - name: Compile rules in the Firestore emulator
+        run: >-
+          npx --yes firebase-tools@15.30.1 emulators:exec
+          --only firestore
+          --project demo-potty-tracker
+          "echo Firestore rules compiled successfully."
+
   deploy:
     name: Deploy Firestore rules
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
