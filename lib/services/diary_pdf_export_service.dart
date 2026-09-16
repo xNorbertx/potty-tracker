@@ -197,7 +197,7 @@ class DiaryPdfExportService {
                           alignment: pw.Alignment.bottomCenter,
                           child: pw.Container(
                             width: period.days > 14 ? 6 : 12,
-                            height: barHeight,
+                            height: barHeight.toDouble(),
                             decoration: pw.BoxDecoration(
                               color: PdfColor.fromInt(0xFF4CAF50),
                               borderRadius: pw.BorderRadius.circular(2),
@@ -231,7 +231,7 @@ class DiaryPdfExportService {
     final knownEntries =
         entries.where((entry) => valueFor(entry) != null).toList();
     if (knownEntries.isEmpty) {
-      return _section(title, const [pw.Text('N/A - not recorded')]);
+      return _section(title, [pw.Text('N/A - not recorded')]);
     }
     final unknownCount = entries.length - knownEntries.length;
     final items = values
