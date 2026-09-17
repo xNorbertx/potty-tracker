@@ -12,6 +12,7 @@ import '../widgets/consistency_selector.dart';
 import '../widgets/size_selector.dart';
 import '../widgets/poop_color_selector.dart';
 import '../widgets/app_status.dart';
+import '../l10n/app_locale.dart';
 
 class LogPoopScreen extends StatefulWidget {
   final Baby baby;
@@ -76,6 +77,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
       initialDate: _selectedDateTime.isAfter(now) ? now : _selectedDateTime,
       firstDate: DateTime(2020),
       lastDate: now,
+      locale: context.appLanguage.locale,
     );
     if (picked != null) {
       setState(() {
@@ -111,7 +113,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   Future<void> _save() async {
     if (_selectedConsistency == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a consistency type')),
+        SnackBar(content: Text(context.tr('selectConsistency'))),
       );
       return;
     }
@@ -159,8 +161,8 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_isEditing
-              ? '💩 Poop entry updated!'
-              : '💩 Poop logged successfully!'),
+              ? '💩 ${context.tr('entryUpdated')}'
+              : '💩 ${context.tr('entrySaved')}'),
           backgroundColor: const Color(0xFF4CAF50),
         ),
       );
@@ -181,7 +183,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Poop Log 💩' : 'Log a Poop 💩'),
+        title: Text(_isEditing ? '${context.tr('editPoopLog')} 💩' : '${context.tr('logAPoop')} 💩'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -195,8 +197,8 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'When did it happen?',
+                    Text(
+                      context.tr('date'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -210,7 +212,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
                             onPressed: _pickDate,
                             icon: const Icon(Icons.calendar_today, size: 18),
                             label: Text(
-                              DateFormat('MMM d, yyyy')
+                              DateFormat('MMM d, yyyy', context.appLanguage.code)
                                   .format(_selectedDateTime),
                             ),
                           ),
@@ -221,7 +223,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
                             onPressed: _pickTime,
                             icon: const Icon(Icons.access_time, size: 18),
                             label: Text(
-                              DateFormat('HH:mm').format(_selectedDateTime),
+                              DateFormat('HH:mm', context.appLanguage.code).format(_selectedDateTime),
                             ),
                           ),
                         ),
@@ -261,10 +263,10 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
             TextFormField(
               controller: _notesCtrl,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
-                hintText: 'Any observations...',
-                prefixIcon: Icon(Icons.notes),
+              decoration: InputDecoration(
+                labelText: context.tr('notesOptional'),
+                hintText: context.tr('observations'),
+                prefixIcon: const Icon(Icons.notes),
                 alignLabelWithHint: true,
               ),
             ),
@@ -284,7 +286,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : Text(_isEditing ? 'Save Changes 💾' : 'Save Entry 💾'),
+                    : Text(_isEditing ? '${context.tr('saveChanges')} 💾' : '${context.tr('saveEntry')} 💾'),
               ),
             ),
           ],

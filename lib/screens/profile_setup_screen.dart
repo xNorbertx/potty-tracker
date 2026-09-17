@@ -5,6 +5,7 @@ import '../models/caregiver_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
+import '../l10n/app_locale.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -54,7 +55,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Welcome to Potty Tracker')),
+        appBar: AppBar(title: Text(context.tr('welcome'))),
         body: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(32),
@@ -65,13 +66,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 children: [
                   const Text('👋', style: TextStyle(fontSize: 64)),
                   const SizedBox(height: 16),
-                  const Text(
-                    'What should we call you?',
+                  Text(
+                    context.tr('whatCallYou'),
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Your name will appear on poop logs you add.',
+                  Text(
+                    context.tr('nameOnLogs'),
                     style: TextStyle(color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
@@ -80,9 +81,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     controller: _nameController,
                     autofocus: true,
                     textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Your name',
-                      prefixIcon: Icon(Icons.person_outline),
+                    decoration: InputDecoration(
+                      labelText: context.tr('yourName'),
+                      prefixIcon: const Icon(Icons.person_outline),
                     ),
                     validator: (value) => value == null || value.trim().isEmpty
                         ? 'Please enter your name'
@@ -100,7 +101,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               child: CircularProgressIndicator(
                                   color: Colors.white, strokeWidth: 2),
                             )
-                          : const Text('Continue'),
+                          : Text(context.tr('continue')),
                     ),
                   ),
                 ],

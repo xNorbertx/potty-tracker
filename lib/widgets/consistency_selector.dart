@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/consistency.dart';
+import '../l10n/app_locale.dart';
 
 class ConsistencySelector extends StatelessWidget {
   final Consistency? selected;
@@ -16,8 +17,8 @@ class ConsistencySelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Consistency',
+        Text(
+          context.tr('consistency'),
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
@@ -79,7 +80,7 @@ class _ConsistencyCard extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               Text(
-                consistency.label,
+                consistency.labelFor(context.appLanguage),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight:

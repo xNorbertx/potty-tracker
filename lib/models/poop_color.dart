@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_locale.dart';
 
 /// Broad color groups keep logging quick while retaining the colors parents
 /// commonly notice. Older, more detailed stored values remain readable below.
@@ -19,6 +20,8 @@ enum PoopColor {
 }
 
 extension PoopColorExtension on PoopColor {
+  String labelFor(AppLanguage language) =>
+      AppLocale.localized(language, value == 'pale_white' ? 'paleWhite' : value);
   static PoopColor? fromString(String? value) {
     if (value == null) return null;
     switch (value) {

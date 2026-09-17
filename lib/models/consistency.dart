@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_locale.dart';
 
 enum Consistency {
   hard,
@@ -38,6 +39,9 @@ extension ConsistencyExtension on Consistency {
         return 'Watery/Runny';
     }
   }
+
+  String labelFor(AppLanguage language) =>
+      AppLocale.localized(language, value);
 
   Color get color {
     switch (this) {
