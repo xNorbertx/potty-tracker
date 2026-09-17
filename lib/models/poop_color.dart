@@ -17,11 +17,12 @@ enum PoopColor {
   final String value;
   final String label;
   final Color swatch;
+
+  String labelFor(AppLanguage language) =>
+      AppLocale.localized(language, value == 'pale_white' ? 'paleWhite' : value);
 }
 
 extension PoopColorExtension on PoopColor {
-  String labelFor(AppLanguage language) =>
-      AppLocale.localized(language, value == 'pale_white' ? 'paleWhite' : value);
   static PoopColor? fromString(String? value) {
     if (value == null) return null;
     switch (value) {
