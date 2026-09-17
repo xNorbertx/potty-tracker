@@ -28,6 +28,7 @@ const baby = {
   ownerUid: 'caregiver-a',
   memberUids: ['caregiver-a'],
   memberLabels: { 'caregiver-a': 'Ada parent' },
+  memberEmails: { 'caregiver-a': 'ada@example.com' },
   shareCode: originalCode,
   createdAt: new Date('2026-01-01T00:00:00Z'),
 };
@@ -105,6 +106,10 @@ test('a valid invite atomically joins a caregiver and rotates its code', async (
     memberLabels: {
       'caregiver-a': 'Ada parent',
       'caregiver-b': 'Other parent',
+    },
+    memberEmails: {
+      'caregiver-a': 'ada@example.com',
+      'caregiver-b': 'other@example.com',
     },
     shareCode: nextCode,
   });
