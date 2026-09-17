@@ -20,12 +20,13 @@ service cloud.firestore {
 
     function isValidBabyCreate() {
       return request.resource.data.keys().hasOnly([
-          'name', 'ownerUid', 'memberUids', 'memberLabels', 'shareCode', 'createdAt'
+          'name', 'ownerUid', 'memberUids', 'memberLabels', 'memberEmails', 'shareCode', 'createdAt'
         ]) &&
         request.resource.data.ownerUid == request.auth.uid &&
         request.resource.data.memberUids.size() == 1 &&
         request.resource.data.memberUids[0] == request.auth.uid &&
         request.resource.data.memberLabels.keys().hasOnly([request.auth.uid]) &&
+        request.resource.data.memberEmails.keys().hasOnly([request.auth.uid]) &&
         request.resource.data.shareCode is string &&
         request.resource.data.shareCode.size() == 6;
     }
@@ -33,24 +34,39 @@ service cloud.firestore {
     function isRoutineBabyUpdate(babyId) {
       return isSignedIn() && request.auth.uid in resource.data.memberUids &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'name', 'memberLabels'
+          'name', 'memberLabels', 'memberEmails'
         ]) &&
         request.resource.data.memberUids == resource.data.memberUids &&
         request.resource.data.memberLabels.diff(resource.data.memberLabels)
-          .affectedKeys().hasOnly([request.auth.uid]);
+          .affectedKeys().hasOnly([request.auth.uid]) &&
+        (
+          (!resource.data.keys().hasAny(['memberEmails']) &&
+            request.resource.data.memberEmails.keys().hasOnly([request.auth.uid])) ||
+          (resource.data.keys().hasAny(['memberEmails']) &&
+            request.resource.data.memberEmails.diff(resource.data.memberEmails)
+              .affectedKeys().hasOnly([request.auth.uid])
+          )
+        );
     }
 
     function isLeavingBaby(babyId) {
       return isSignedIn() && request.auth.uid in resource.data.memberUids &&
         resource.data.memberUids.size() > 1 &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'memberUids', 'memberLabels'
+          'memberUids', 'memberLabels', 'memberEmails'
         ]) &&
         request.resource.data.memberUids.size() == resource.data.memberUids.size() - 1 &&
         request.resource.data.memberUids.hasOnly(resource.data.memberUids) &&
         !request.resource.data.memberUids.hasAny([request.auth.uid]) &&
         request.resource.data.memberLabels.diff(resource.data.memberLabels)
-          .affectedKeys().hasOnly([request.auth.uid]);
+          .affectedKeys().hasOnly([request.auth.uid]) &&
+        (
+          !request.resource.data.keys().hasAny(['memberEmails']) ||
+          (resource.data.keys().hasAny(['memberEmails']) &&
+            request.resource.data.memberEmails.diff(resource.data.memberEmails)
+              .affectedKeys().hasOnly([request.auth.uid])
+          )
+        );
     }
 
     function isJoiningBaby(babyId) {
@@ -58,13 +74,21 @@ service cloud.firestore {
       let after = babyAfter(babyId).data;
       return isSignedIn() && !(request.auth.uid in before.memberUids) &&
         after.diff(before).affectedKeys().hasOnly([
-          'memberUids', 'memberLabels', 'shareCode'
+          'memberUids', 'memberLabels', 'memberEmails', 'shareCode'
         ]) &&
         after.memberUids.size() == before.memberUids.size() + 1 &&
         after.memberUids.hasAll(before.memberUids) &&
         after.memberUids.hasAny([request.auth.uid]) &&
         after.memberLabels.diff(before.memberLabels)
           .affectedKeys().hasOnly([request.auth.uid]) &&
+        (
+          (!before.keys().hasAny(['memberEmails']) &&
+            after.memberEmails.keys().hasOnly([request.auth.uid])) ||
+          (before.keys().hasAny(['memberEmails']) &&
+            after.memberEmails.diff(before.memberEmails)
+              .affectedKeys().hasOnly([request.auth.uid])
+          )
+        ) &&
         after.shareCode is string &&
         after.shareCode.size() == 6 &&
         after.shareCode != before.shareCode &&

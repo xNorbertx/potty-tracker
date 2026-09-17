@@ -16,6 +16,10 @@ void main() {
           'owner-1': 'owner@example.com',
           'parent-2': 'parent@example.com',
         },
+        memberEmails: const {
+          'owner-1': 'owner@example.com',
+          'parent-2': 'parent@example.com',
+        },
         shareCode: 'ABC123',
         createdAt: createdAt,
       );
@@ -30,6 +34,7 @@ void main() {
       expect(restored.ownerUid, 'owner-1');
       expect(restored.memberUids, ['owner-1', 'parent-2']);
       expect(restored.memberLabels['parent-2'], 'parent@example.com');
+      expect(restored.memberEmails['parent-2'], 'parent@example.com');
       expect(restored.shareCode, 'ABC123');
       expect(restored.createdAt, createdAt);
     });

@@ -1,0 +1,37 @@
+name: Backfill caregiver details
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Run a preview or apply the backfill to production
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - apply
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+      - name: Install migration dependency
+        run: npm install --no-save --ignore-scripts firebase-admin@13.6.1
+        working-directory: firestore-tests
+      - name: Backfill caregiver names and emails
+        env:
+          FIREBASE_RULES_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_RULES_SERVICE_ACCOUNT }}
+        run: >-
+          node firestore-tests/backfill-caregiver-details.mjs
+          ${{ inputs.mode == 'apply' && '--apply' || '' }}

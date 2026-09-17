@@ -32,6 +32,21 @@ class FirestoreService {
   CollectionReference<Map<String, dynamic>> get _profilesRef =>
       _db.collection('caregiver_profiles');
 
+  Future<({String name, String email})> _caregiverDetails(
+    String uid,
+    String? email,
+  ) async {
+    final profile = await getCaregiverProfile(uid);
+    return (
+      name: profile?.name.trim().isNotEmpty == true
+          ? profile!.name.trim()
+          : 'Caregiver',
+      email: profile?.email.trim().isNotEmpty == true
+          ? profile!.email.trim()
+          : email?.trim() ?? '',
+    );
+  }
+
   Stream<CaregiverProfile?> caregiverProfileStream(String uid) =>
       _profilesRef.doc(uid).snapshots().map(
             (snapshot) => snapshot.exists
@@ -56,6 +71,7 @@ class FirestoreService {
 
   Future<Baby> addBaby(String uid, String name,
       {String? caregiverLabel}) async {
+    final caregiver = await _caregiverDetails(uid, caregiverLabel);
     final id = _uuid.v4();
     final shareCode = _generateShareCode();
     final baby = Baby(
@@ -63,7 +79,8 @@ class FirestoreService {
       name: name,
       ownerUid: uid,
       memberUids: [uid],
-      memberLabels: {uid: caregiverLabel ?? 'Caregiver'},
+      memberLabels: {uid: caregiver.name},
+      memberEmails: {uid: caregiver.email},
       shareCode: shareCode,
       createdAt: DateTime.now(),
     );
@@ -83,6 +100,7 @@ class FirestoreService {
     String code, {
     String? caregiverLabel,
   }) async {
+    final caregiver = await _caregiverDetails(uid, caregiverLabel);
     final codeDoc = await _db
         .collection('share_codes')
         .doc(code.toUpperCase().trim())
@@ -102,10 +120,9 @@ class FirestoreService {
           {
             'memberUids': FieldValue.arrayUnion([uid]),
             'memberLabels': {
-              uid: caregiverLabel?.isNotEmpty == true
-                  ? caregiverLabel
-                  : 'Caregiver',
+              uid: caregiver.name,
             },
+            'memberEmails': {uid: caregiver.email},
             'shareCode': nextShareCode,
           },
           SetOptions(merge: true));
@@ -130,14 +147,18 @@ class FirestoreService {
             (snapshot) => snapshot.exists ? Baby.fromFirestore(snapshot) : null,
           );
 
-  Future<void> updateCaregiverLabel({
+  Future<void> updateCaregiverDetails({
     required Baby baby,
     required String uid,
-    required String label,
+    required String name,
+    required String email,
   }) async {
-    if (label.isEmpty || baby.memberLabels[uid] == label) return;
+    if (baby.memberLabels[uid] == name && baby.memberEmails[uid] == email) {
+      return;
+    }
     await _babiesRef.doc(baby.id).update({
-      'memberLabels': {...baby.memberLabels, uid: label},
+      'memberLabels': {...baby.memberLabels, uid: name},
+      'memberEmails': {...baby.memberEmails, uid: email},
     });
   }
 
@@ -150,10 +171,14 @@ class FirestoreService {
     for (final baby in babies) {
       final otherMembers = baby.memberUids.where((id) => id != uid).toList();
       if (otherMembers.isNotEmpty) {
-        await _babiesRef.doc(baby.id).update({
+        final updates = <String, dynamic>{
           'memberUids': otherMembers,
           'memberLabels.$uid': FieldValue.delete(),
-        });
+        };
+        if (baby.memberEmails.containsKey(uid)) {
+          updates['memberEmails.$uid'] = FieldValue.delete();
+        }
+        await _babiesRef.doc(baby.id).update(updates);
       } else {
         await deleteBaby(baby);
       }
@@ -167,10 +192,14 @@ class FirestoreService {
     if (otherMembers.isEmpty) {
       throw StateError('The last caregiver cannot leave this diary.');
     }
-    await _babiesRef.doc(baby.id).update({
+    final updates = <String, dynamic>{
       'memberUids': otherMembers,
       'memberLabels.$uid': FieldValue.delete(),
-    });
+    };
+    if (baby.memberEmails.containsKey(uid)) {
+      updates['memberEmails.$uid'] = FieldValue.delete();
+    }
+    await _babiesRef.doc(baby.id).update(updates);
   }
 
   Future<void> deleteBaby(Baby baby) async {
