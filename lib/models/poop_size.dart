@@ -1,3 +1,5 @@
+import '../l10n/app_locale.dart';
+
 enum PoopSize {
   small,
   medium,
@@ -28,6 +30,9 @@ extension PoopSizeExtension on PoopSize {
   }
 
   String get value => name;
+
+  String labelFor(AppLanguage language) =>
+      AppLocale.localized(language, value);
 
   static PoopSize? fromString(String? value) {
     if (value == null) return null;

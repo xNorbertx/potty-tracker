@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import '../services/diary_pdf_export_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
+import '../l10n/app_locale.dart';
 
 class BabyOverviewScreen extends StatefulWidget {
   final Baby baby;
@@ -54,7 +55,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Invite a caregiver'),
+        title: Text(context.tr('inviteCaregiver')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -84,18 +85,18 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                 Clipboard.setData(ClipboardData(text: currentBaby.shareCode));
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invite code copied.')),
+                  SnackBar(content: Text(context.tr('inviteCopied'))),
                 );
               },
               icon: const Icon(Icons.copy, size: 18),
-              label: const Text('Copy code'),
+              label: Text(context.tr('copyCode')),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Done'),
+            child: Text(context.tr('done')),
           ),
         ],
       ),
@@ -111,16 +112,16 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Export diary summary',
+              Text(context.tr('exportSummary'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const Text('Choose the period to include in the PDF.'),
+              Text(context.tr('chooseExportPeriod')),
               const SizedBox(height: 12),
               ...DiaryExportPeriod.values.map(
                 (value) => ListTile(
                   leading: const Icon(Icons.picture_as_pdf_outlined,
                       color: Color(0xFF4CAF50)),
-                  title: Text(value.label),
+                  title: Text(value.labelFor(context.appLanguage)),
                   onTap: () => Navigator.pop(sheetContext, value),
                 ),
               ),
@@ -139,6 +140,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
         entries: entries,
         period: period,
         now: now,
+        language: context.appLanguage,
       );
       final safeName = baby.name.replaceAll(RegExp('[^a-zA-Z0-9]+'), '_');
       await Printing.sharePdf(
@@ -197,8 +199,8 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
               body: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  const Text(
-                    'Caregivers',
+                  Text(
+                    context.tr('caregivers'),
                     style: TextStyle(
                       color: Color(0xFF388E3C),
                       fontWeight: FontWeight.bold,
@@ -229,7 +231,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                         return ListTile(
                           leading: const Icon(Icons.person_outline,
                               color: Color(0xFF4CAF50)),
-                          title: Text(caregiverUid == uid ? 'You' : name),
+                          title: Text(caregiverUid == uid ? context.tr('you') : name),
                           subtitle: email == null ? null : Text(email),
                         );
                       }).toList(),
@@ -239,7 +241,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                   OutlinedButton.icon(
                     onPressed: () => _showShareDialog(context, currentBaby),
                     icon: const Icon(Icons.person_add_alt_1),
-                    label: const Text('Invite a caregiver'),
+                    label: Text(context.tr('inviteCaregiver')),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
@@ -254,11 +256,11 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                           )
                         : const Icon(Icons.download_outlined),
                     label: Text(
-                        _exporting ? 'Preparing PDF...' : 'Export diary PDF'),
+                        _exporting ? context.tr('exportingPdf') : context.tr('exportPdf')),
                   ),
                   const SizedBox(height: 28),
-                  const Text(
-                    'Diary at a glance',
+                  Text(
+                    context.tr('diaryAtAGlance'),
                     style: TextStyle(
                       color: Color(0xFF388E3C),
                       fontWeight: FontWeight.bold,
@@ -269,14 +271,14 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                     children: [
                       Expanded(
                         child: _StatCard(
-                          label: 'Total logs',
+                          label: context.tr('totalLogs'),
                           value: '${entries.length}',
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _StatCard(
-                          label: 'This week',
+                          label: context.tr('thisWeek'),
                           value: '$weekCount',
                         ),
                       ),
@@ -287,7 +289,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                     child: ListTile(
                       leading:
                           const Icon(Icons.schedule, color: Color(0xFF4CAF50)),
-                      title: const Text('Most recent log'),
+                      title: Text(context.tr('mostRecentLog')),
                       subtitle: Text(
                         lastEntry == null
                             ? 'No poop logs yet'
@@ -302,7 +304,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () => Navigator.pop(context, currentBaby.id),
                       icon: const Icon(Icons.calendar_month),
-                      label: Text('Open ${currentBaby.name}\'s diary'),
+                      label: Text(context.tr('openDiary', args: {'name': currentBaby.name})),
                     ),
                   ),
                 ],

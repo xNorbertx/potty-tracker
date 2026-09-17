@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/poop_color.dart';
+import '../l10n/app_locale.dart';
 
 class PoopColorSelector extends StatelessWidget {
   final PoopColor? selected;
@@ -13,11 +14,11 @@ class PoopColorSelector extends StatelessWidget {
     return DropdownButtonFormField<PoopColor>(
       value: selected,
       isExpanded: true,
-      decoration: const InputDecoration(
-        labelText: 'Colour (optional)',
-        prefixIcon: Icon(Icons.palette_outlined),
+      decoration: InputDecoration(
+        labelText: context.tr('colorOptional'),
+        prefixIcon: const Icon(Icons.palette_outlined),
       ),
-      hint: const Text('Select colour from baby poo guide'),
+      hint: Text(context.tr('selectColor')),
       items: PoopColor.values
           .map(
             (color) => DropdownMenuItem<PoopColor>(
@@ -35,7 +36,7 @@ class PoopColorSelector extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(color.label),
+                  Text(color.labelFor(context.appLanguage)),
                 ],
               ),
             ),

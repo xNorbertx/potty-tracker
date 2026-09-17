@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/poop_entry.dart';
 import '../models/consistency.dart';
 import '../models/poop_size.dart';
+import '../l10n/app_locale.dart';
 
 class PoopEntryTile extends StatelessWidget {
   final PoopEntry entry;
@@ -30,14 +31,14 @@ class PoopEntryTile extends StatelessWidget {
             backgroundColor: const Color(0xFF42A5F5),
             foregroundColor: Colors.white,
             icon: Icons.edit_outlined,
-            label: 'Edit',
+            label: context.tr('edit'),
           ),
           SlidableAction(
             onPressed: (_) => _confirmDelete(context),
             backgroundColor: const Color(0xFFEF5350),
             foregroundColor: Colors.white,
             icon: Icons.delete_outline,
-            label: 'Delete',
+            label: context.tr('delete'),
           ),
         ],
       ),
@@ -61,7 +62,7 @@ class PoopEntryTile extends StatelessWidget {
             ),
           ),
           title: Text(
-            entry.consistency.label,
+            entry.consistency.labelFor(context.appLanguage),
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           subtitle: Column(
@@ -69,8 +70,8 @@ class PoopEntryTile extends StatelessWidget {
             children: [
               Text(
                 entry.size != null
-                    ? '${entry.size!.emoji} ${entry.size!.label}'
-                    : 'No size selected',
+                    ? '${entry.size!.emoji} ${entry.size!.labelFor(context.appLanguage)}'
+                    : context.tr('notAvailable'),
                 style: TextStyle(
                   fontSize: 12,
                   color: entry.size != null ? Colors.black87 : Colors.grey,
@@ -92,7 +93,7 @@ class PoopEntryTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      entry.color?.label ?? 'No color selected',
+                      entry.color?.labelFor(context.appLanguage) ?? context.tr('notAvailable'),
                       style: TextStyle(
                         fontSize: 12,
                         color:
@@ -144,16 +145,16 @@ class PoopEntryTile extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete entry?'),
-        content: const Text('This will permanently delete this poop entry.'),
+        title: Text(context.tr('deleteEntryQuestion')),
+        content: Text(context.tr('deleteEntryHelp')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(context.tr('delete'), style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),

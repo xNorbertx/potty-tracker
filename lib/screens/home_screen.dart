@@ -13,6 +13,7 @@ import 'log_poop_screen.dart';
 import 'profile_setup_screen.dart';
 import 'account_settings_screen.dart';
 import 'baby_settings_screen.dart';
+import '../l10n/app_locale.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -73,7 +74,9 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         if (profileSnap.data == null) return const ProfileSetupScreen();
 
-        return StreamBuilder<List<Baby>>(
+        return AppLocale(
+          language: AppLanguage.fromCode(profileSnap.data!.languageCode),
+          child: StreamBuilder<List<Baby>>(
           stream: firestore.babiesStream(uid),
           builder: (context, babySnap) {
             // While loading, show spinner (prevents flash of setup screen)
@@ -145,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: Text('👶 ${baby.name}\'s Poop Diary 💩'),
                     actions: [
                       PopupMenuButton<String>(
-                        tooltip: 'Switch baby',
+                        tooltip: context.tr('yourBabies'),
                         icon: const Icon(Icons.switch_account),
                         onSelected: (babyId) => setState(() {
                           _selectedBabyId = babyId;
@@ -206,37 +209,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                         },
                         itemBuilder: (_) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'baby',
                             child: Row(
                               children: [
                                 Icon(Icons.child_care,
                                     color: Color(0xFF4CAF50)),
                                 SizedBox(width: 8),
-                                Text('Your babies'),
+                                Text(context.tr('yourBabies')),
                               ],
                             ),
                           ),
                           const PopupMenuDivider(),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'account',
                             child: Row(
                               children: [
                                 Icon(Icons.manage_accounts,
                                     color: Color(0xFF4CAF50)),
                                 SizedBox(width: 8),
-                                Text('Account settings'),
+                                Text(context.tr('accountSettings')),
                               ],
                             ),
                           ),
                           const PopupMenuDivider(),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'signout',
                             child: Row(
                               children: [
                                 Icon(Icons.logout, color: Colors.grey),
                                 SizedBox(width: 8),
-                                Text('Sign Out'),
+                                Text(context.tr('signOut')),
                               ],
                             ),
                           ),
@@ -259,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const Divider(height: 1),
                       if (dayEntries.isEmpty)
-                        const Expanded(
+                        Expanded(
                           child: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -267,12 +270,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text('🌟', style: TextStyle(fontSize: 40)),
                                 SizedBox(height: 8),
                                 Text(
-                                  'No entries for this day',
+                                  context.tr('noEntries'),
                                   style: TextStyle(color: Colors.grey),
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  'Tap 💩 to log one!',
+                                  context.tr('tapToLog'),
                                   style: TextStyle(
                                       color: Colors.grey, fontSize: 13),
                                 ),
@@ -344,12 +347,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                     icon: const Text('💩', style: TextStyle(fontSize: 20)),
-                    label: const Text('Log Poop'),
+                    label: Text(context.tr('logPoop')),
                   ),
                 );
               },
             );
           },
+          ),
         );
       },
     );
@@ -382,14 +386,14 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Add a baby'),
+        title: Text(context.tr('addBaby')),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: controller,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: "Baby's name"),
+            decoration: InputDecoration(labelText: context.tr('babyName')),
             validator: (value) => value == null || value.trim().isEmpty
                 ? 'Please enter a name'
                 : null,
@@ -398,7 +402,7 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(context.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -424,7 +428,7 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
                 if (mounted) setState(() => _addingBaby = false);
               }
             },
-            child: const Text('Add baby'),
+            child: Text(context.tr('addBaby')),
           ),
         ],
       ),

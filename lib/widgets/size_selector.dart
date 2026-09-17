@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/poop_size.dart';
+import '../l10n/app_locale.dart';
 
 class SizeSelector extends StatelessWidget {
   final PoopSize? selected;
@@ -16,8 +17,8 @@ class SizeSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Size',
+        Text(
+          context.tr('size'),
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
@@ -63,7 +64,7 @@ class SizeSelector extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          size.label,
+                          size.labelFor(context.appLanguage),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: isSelected

@@ -6,6 +6,7 @@ import '../models/caregiver_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
+import '../l10n/app_locale.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   final List<Baby> babies;
@@ -28,14 +29,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Your name'),
+        title: Text(context.tr('yourName')),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: controller,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: 'Name'),
+            decoration: InputDecoration(labelText: context.tr('name')),
             validator: (value) => value == null || value.trim().isEmpty
                 ? 'Please enter your name'
                 : null,
@@ -44,7 +45,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(context.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -55,12 +56,13 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         uid: uid,
                         name: controller.text.trim(),
                         email: auth.currentUserEmail ?? profile?.email ?? '',
+                        languageCode: profile?.languageCode ?? 'en',
                       ),
                     );
                 if (!mounted || !dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Name updated.')),
+                  SnackBar(content: Text(context.tr('nameUpdated'))),
                 );
               } catch (error) {
                 if (!mounted) return;
@@ -72,12 +74,50 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 );
               }
             },
-            child: const Text('Save'),
+            child: Text(context.tr('save')),
           ),
         ],
       ),
     );
     controller.dispose();
+  }
+
+  Future<void> _editLanguage(CaregiverProfile? profile) async {
+    final auth = context.read<AuthService>();
+    final uid = auth.currentUserId;
+    if (uid == null || profile == null) return;
+    final selected = await showDialog<AppLanguage>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: Text(context.tr('chooseLanguage')),
+        children: AppLanguage.values
+            .map((language) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(dialogContext, language),
+                  child: Text(language.nativeName),
+                ))
+            .toList(),
+      ),
+    );
+    if (selected == null || selected.code == profile.languageCode) return;
+    try {
+      await context.read<FirestoreService>().saveCaregiverProfile(
+            CaregiverProfile(
+              uid: uid,
+              name: profile.name,
+              email: profile.email,
+              languageCode: selected.code,
+            ),
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('languageUpdated'))),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyError(error))),
+      );
+    }
   }
 
   Future<void> _changePassword() async {
@@ -91,7 +131,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Change password'),
+          title: Text(context.tr('changePassword')),
           content: Form(
             key: formKey,
             child: Column(
@@ -102,7 +142,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   obscureText: true,
                   enabled: !submitting,
                   decoration:
-                      const InputDecoration(labelText: 'Current password'),
+                      InputDecoration(labelText: context.tr('currentPassword')),
                   validator: (value) => value == null || value.isEmpty
                       ? 'Enter your current password'
                       : null,
@@ -112,7 +152,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   controller: newPassword,
                   obscureText: true,
                   enabled: !submitting,
-                  decoration: const InputDecoration(labelText: 'New password'),
+                  decoration: InputDecoration(labelText: context.tr('newPassword')),
                   validator: (value) => value == null || value.length < 6
                       ? 'Use at least 6 characters'
                       : null,
@@ -123,7 +163,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   obscureText: true,
                   enabled: !submitting,
                   decoration:
-                      const InputDecoration(labelText: 'Confirm new password'),
+                      InputDecoration(labelText: context.tr('confirmPassword')),
                   validator: (value) => value != newPassword.text
                       ? 'Passwords do not match'
                       : null,
@@ -134,7 +174,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           actions: [
             TextButton(
               onPressed: submitting ? null : () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(context.tr('cancel')),
             ),
             ElevatedButton(
               onPressed: submitting
@@ -150,7 +190,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         if (!mounted || !dialogContext.mounted) return;
                         Navigator.pop(dialogContext);
                         ScaffoldMessenger.of(this.context).showSnackBar(
-                          const SnackBar(content: Text('Password changed.')),
+                          SnackBar(content: Text(this.context.tr('passwordChanged'))),
                         );
                       } catch (error) {
                         setDialogState(() => submitting = false);
@@ -168,7 +208,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       width: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Save password'),
+                  : Text(context.tr('savePassword')),
             ),
           ],
         ),
@@ -251,12 +291,12 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   Widget build(BuildContext context) {
     final auth = context.read<AuthService>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Account settings')),
+      appBar: AppBar(title: Text(context.tr('accountSettings'))),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
-            'Account',
+          Text(
+            context.tr('account'),
             style: TextStyle(
               color: Color(0xFF388E3C),
               fontWeight: FontWeight.bold,
@@ -275,41 +315,53 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 : context
                     .read<FirestoreService>()
                     .caregiverProfileStream(auth.currentUserId!),
-            builder: (context, snapshot) => Card(
-              child: ListTile(
+            builder: (context, snapshot) => Column(
+              children: [
+                Card(
+                  child: ListTile(
                 leading:
                     const Icon(Icons.person_outline, color: Color(0xFF4CAF50)),
-                title: const Text('Your name'),
+                title: Text(context.tr('yourName')),
                 subtitle: Text(snapshot.data?.displayName.isNotEmpty == true
                     ? snapshot.data!.displayName
-                    : 'Add your name'),
+                    : context.tr('yourName')),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _editName(snapshot.data),
-              ),
+                    onTap: () => _editName(snapshot.data),
+                  ),
+                ),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.language, color: Color(0xFF4CAF50)),
+                    title: Text(context.tr('language')),
+                    subtitle: Text(AppLanguage.fromCode(snapshot.data?.languageCode).nativeName),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _editLanguage(snapshot.data),
+                  ),
+                ),
+              ],
             ),
           ),
           if (auth.hasPasswordProvider)
             Card(
               child: ListTile(
                 leading: const Icon(Icons.password, color: Color(0xFF4CAF50)),
-                title: const Text('Change password'),
-                subtitle: const Text('Update the password you use to sign in.'),
+                title: Text(context.tr('changePassword')),
+                subtitle: Text(context.tr('passwordHelp')),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: _changePassword,
               ),
             ),
           const SizedBox(height: 28),
-          const Text(
-            'Danger zone',
+          Text(
+            context.tr('dangerZone'),
             style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Card(
             child: ListTile(
               leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text('Delete account'),
-              subtitle: const Text(
-                  'Permanently delete your account and relevant baby data.'),
+              title: Text(context.tr('deleteAccount')),
+              subtitle: Text(context.tr('deleteAccountHelp')),
               trailing: _deletingAccount
                   ? const SizedBox(
                       width: 20,

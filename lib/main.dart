@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
@@ -10,6 +11,7 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'widgets/app_status.dart';
+import 'l10n/app_locale.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,10 +32,14 @@ class PottyTrackerApp extends StatelessWidget {
         Provider<FirestoreService>(create: (_) => FirestoreService()),
         Provider<ConnectionService>(create: (_) => ConnectionService()),
       ],
-      child: MaterialApp(
+      child: AppLocale(
+        language: AppLanguage.english,
+        child: MaterialApp(
         title: 'Potty Tracker',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.theme,
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        supportedLocales: AppLanguage.values.map((language) => language.locale),
         initialRoute: '/',
         routes: {
           '/': (_) => const SplashScreen(),
@@ -42,6 +48,7 @@ class PottyTrackerApp extends StatelessWidget {
         },
         builder: (context, child) => ConnectionStatusBanner(
           child: child ?? const SizedBox.shrink(),
+        ),
         ),
       ),
     );
