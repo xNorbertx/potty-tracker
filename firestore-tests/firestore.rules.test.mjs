@@ -50,10 +50,12 @@ afterEach(async () => {
   await testEnv.clearFirestore();
 });
 
-async function seedDiary() {
+async function seedDiary({ legacy = false } = {}) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();
-    await setDoc(doc(db, 'babies', babyId), baby);
+    const seededBaby = { ...baby };
+    if (legacy) delete seededBaby.memberEmails;
+    await setDoc(doc(db, 'babies', babyId), seededBaby);
     await setDoc(doc(db, 'babies', babyId, 'entries', 'entry-1'), {
       babyId,
       timestamp: new Date('2026-01-02T10:00:00Z'),
@@ -111,6 +113,27 @@ test('a valid invite atomically joins a caregiver and rotates its code', async (
       'caregiver-a': 'ada@example.com',
       'caregiver-b': 'other@example.com',
     },
+    shareCode: nextCode,
+  });
+  batch.delete(doc(db, 'share_codes', originalCode));
+  batch.set(doc(db, 'share_codes', nextCode), { babyId });
+
+  await assertSucceeds(batch.commit());
+});
+
+test('a valid invite can add an email map to a legacy diary', async () => {
+  await seedDiary({ legacy: true });
+  const db = testEnv.authenticatedContext('caregiver-b').firestore();
+  const nextCode = 'DEF456';
+  const batch = writeBatch(db);
+
+  batch.update(doc(db, 'babies', babyId), {
+    memberUids: ['caregiver-a', 'caregiver-b'],
+    memberLabels: {
+      'caregiver-a': 'Ada parent',
+      'caregiver-b': 'Other parent',
+    },
+    memberEmails: { 'caregiver-b': 'other@example.com' },
     shareCode: nextCode,
   });
   batch.delete(doc(db, 'share_codes', originalCode));
