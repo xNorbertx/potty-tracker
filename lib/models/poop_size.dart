@@ -42,4 +42,3 @@ extension PoopSizeExtension on PoopSize {
     );
   }
 }
-import '../l10n/app_locale.dart';
