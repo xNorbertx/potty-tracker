@@ -166,9 +166,11 @@ class DiaryPdfExportService {
             ? 2
             : 5;
 
+    final middleCount = highestCount > 1 ? (highestCount / 2).ceil() : null;
+
     return pw.Container(
-      height: 150,
-      padding: const pw.EdgeInsets.fromLTRB(8, 8, 8, 0),
+      height: 170,
+      padding: const pw.EdgeInsets.all(8),
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: PdfColors.grey300),
         borderRadius: pw.BorderRadius.circular(6),
@@ -176,44 +178,86 @@ class DiaryPdfExportService {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text('Daily poops (up to $highestCount)',
+          pw.Text('Poops per day',
               style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
           pw.SizedBox(height: 4),
           pw.Expanded(
             child: pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-              children: List.generate(period.days, (index) {
-                final count = dailyCounts[index];
-                final day = start.add(Duration(days: index));
-                final showLabel =
-                    index % labelInterval == 0 || index == period.days - 1;
-                final barHeight =
-                    count == 0 ? 0.0 : math.max(3, 82 * count / highestCount);
-                return pw.Expanded(
+              children: [
+                pw.SizedBox(
+                  width: 20,
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('$highestCount',
+                          style: const pw.TextStyle(fontSize: 7)),
+                      if (middleCount != null) ...[
+                        pw.Spacer(),
+                        pw.Text('$middleCount',
+                            style: const pw.TextStyle(fontSize: 7)),
+                      ],
+                      pw.Spacer(),
+                      pw.Text('0', style: const pw.TextStyle(fontSize: 7)),
+                      pw.SizedBox(height: 13),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(width: 4),
+                pw.Expanded(
                   child: pw.Column(
                     children: [
                       pw.Expanded(
-                        child: pw.Align(
-                          alignment: pw.Alignment.bottomCenter,
-                          child: pw.Container(
-                            width: period.days > 14 ? 6 : 12,
-                            height: barHeight.toDouble(),
-                            decoration: pw.BoxDecoration(
-                              color: PdfColor.fromInt(0xFF4CAF50),
-                              borderRadius: pw.BorderRadius.circular(2),
+                        child: pw.Container(
+                          decoration: pw.BoxDecoration(
+                            border: pw.Border(
+                              left: pw.BorderSide(color: PdfColors.grey400),
+                              bottom: pw.BorderSide(color: PdfColors.grey400),
                             ),
+                          ),
+                          child: pw.Row(
+                            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                            children: List.generate(period.days, (index) {
+                              final count = dailyCounts[index];
+                              final barHeight = count == 0
+                                  ? 0.0
+                                  : math.max(3, 92 * count / highestCount);
+                              return pw.Expanded(
+                                child: pw.Align(
+                                  alignment: pw.Alignment.bottomCenter,
+                                  child: pw.Container(
+                                    width: period.days > 14 ? 6 : 12,
+                                    height: barHeight.toDouble(),
+                                    decoration: pw.BoxDecoration(
+                                      color: PdfColor.fromInt(0xFF4CAF50),
+                                      borderRadius: pw.BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
                           ),
                         ),
                       ),
                       pw.SizedBox(height: 3),
-                      pw.Text(
-                        showLabel ? DateFormat('M/d').format(day) : '',
-                        style: const pw.TextStyle(fontSize: 5),
+                      pw.Row(
+                        children: List.generate(period.days, (index) {
+                          final day = start.add(Duration(days: index));
+                          final showLabel = index % labelInterval == 0 ||
+                              index == period.days - 1;
+                          return pw.Expanded(
+                            child: pw.Text(
+                              showLabel ? DateFormat('M/d').format(day) : '',
+                              textAlign: pw.TextAlign.center,
+                              style: const pw.TextStyle(fontSize: 5),
+                            ),
+                          );
+                        }),
                       ),
                     ],
                   ),
-                );
-              }),
+                ),
+              ],
             ),
           ),
         ],
@@ -228,17 +272,12 @@ class DiaryPdfExportService {
     required String Function(T value) labelFor,
     required T? Function(PoopEntry entry) valueFor,
   }) {
-    final knownEntries =
-        entries.where((entry) => valueFor(entry) != null).toList();
-    if (knownEntries.isEmpty) {
-      return _section(title, [pw.Text('N/A - not recorded')]);
-    }
-    final unknownCount = entries.length - knownEntries.length;
-    final items = values
-        .map((value) =>
-            '${labelFor(value)}: ${knownEntries.where((entry) => valueFor(entry) == value).length}')
-        .toList();
-    if (unknownCount > 0) items.add('Not recorded: $unknownCount');
+    final items = breakdownItems(
+      values: values,
+      entries: entries,
+      labelFor: labelFor,
+      valueFor: valueFor,
+    );
     return _section(
       title,
       [
@@ -261,6 +300,23 @@ class DiaryPdfExportService {
         ),
       ],
     );
+  }
+
+  List<String> breakdownItems<T>({
+    required List<T> values,
+    required List<PoopEntry> entries,
+    required String Function(T value) labelFor,
+    required T? Function(PoopEntry entry) valueFor,
+  }) {
+    final items = values
+        .where((value) => entries.any((entry) => valueFor(entry) == value))
+        .map((value) =>
+            '${labelFor(value)}: ${entries.where((entry) => valueFor(entry) == value).length}')
+        .toList();
+    final unknownCount =
+        entries.where((entry) => valueFor(entry) == null).length;
+    if (unknownCount > 0) items.add('n/a: $unknownCount');
+    return items;
   }
 
   pw.Widget _section(String title, List<pw.Widget> children) => pw.Column(

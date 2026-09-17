@@ -30,12 +30,24 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
       final uid = auth.currentUserId;
       final email = auth.currentUserEmail;
       if (uid == null || email == null) return;
-      context.read<FirestoreService>().updateCaregiverLabel(
-            baby: widget.baby,
-            uid: uid,
-            label: email,
-          );
+      _refreshCurrentCaregiver(uid, email);
     });
+  }
+
+  Future<void> _refreshCurrentCaregiver(String uid, String email) async {
+    final firestore = context.read<FirestoreService>();
+    final profile = await firestore.getCaregiverProfile(uid);
+    if (!mounted) return;
+    await firestore.updateCaregiverDetails(
+      baby: widget.baby,
+      uid: uid,
+      name: profile?.name.trim().isNotEmpty == true
+          ? profile!.name.trim()
+          : 'Caregiver',
+      email: profile?.email.trim().isNotEmpty == true
+          ? profile!.email.trim()
+          : email,
+    );
   }
 
   void _showShareDialog(BuildContext context, Baby currentBaby) {
@@ -198,17 +210,27 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                       children:
                           currentBaby.memberUids.asMap().entries.map((entry) {
                         final caregiverUid = entry.value;
-                        final label = currentBaby.memberLabels[caregiverUid] ??
-                            'Caregiver ${entry.key + 1}';
+                        final storedLabel =
+                            currentBaby.memberLabels[caregiverUid];
+                        final storedEmail =
+                            currentBaby.memberEmails[caregiverUid];
+                        final labelIsEmail = storedLabel?.contains('@') == true;
+                        final hasKnownName = storedLabel != 'Caregiver' &&
+                            !labelIsEmail &&
+                            storedLabel?.trim().isNotEmpty == true;
+                        final name = hasKnownName
+                            ? storedLabel!.trim()
+                            : 'Caregiver ${entry.key + 1}';
+                        final email = storedEmail?.trim().isNotEmpty == true
+                            ? storedEmail!.trim()
+                            : labelIsEmail
+                                ? storedLabel!
+                                : null;
                         return ListTile(
                           leading: const Icon(Icons.person_outline,
                               color: Color(0xFF4CAF50)),
-                          title: Text(caregiverUid == uid ? 'You' : label),
-                          subtitle: caregiverUid == uid && label != 'Caregiver'
-                              ? Text(label)
-                              : caregiverUid == uid
-                                  ? null
-                                  : const Text('Connected to this diary'),
+                          title: Text(caregiverUid == uid ? 'You' : name),
+                          subtitle: email == null ? null : Text(email),
                         );
                       }).toList(),
                     ),

@@ -78,4 +78,21 @@ void main() {
 
     expect(bytes.length, greaterThan(1000));
   });
+
+  test('breakdowns include only recorded values and n/a entries', () {
+    final entries = [
+      entry(id: 'one', timestamp: now, size: PoopSize.small),
+      entry(id: 'two', timestamp: now, size: PoopSize.small),
+      entry(id: 'three', timestamp: now),
+    ];
+
+    final items = service.breakdownItems(
+      values: PoopSize.values,
+      entries: entries,
+      labelFor: (value) => value.label,
+      valueFor: (entry) => entry.size,
+    );
+
+    expect(items, ['Small: 2', 'n/a: 1']);
+  });
 }

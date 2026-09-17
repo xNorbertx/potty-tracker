@@ -44,7 +44,8 @@ void main() {
       expect(baby.memberUids, contains('user1'));
       expect(baby.shareCode, isNotEmpty);
       expect(baby.shareCode.length, 6);
-      expect(baby.memberLabels, {'user1': 'parent@example.com'});
+      expect(baby.memberLabels, {'user1': 'Caregiver'});
+      expect(baby.memberEmails, {'user1': 'parent@example.com'});
     });
 
     test('babiesStream emits added baby', () async {
@@ -78,15 +79,22 @@ void main() {
 
       expect(joined, isNotNull);
       expect(joined!.memberUids, containsAll(['user1', 'user2']));
-      expect(joined.memberLabels['user2'], 'other@example.com');
+      expect(joined.memberLabels['user2'], 'Caregiver');
+      expect(joined.memberEmails['user2'], 'other@example.com');
       expect(joined.shareCode, isNot(baby.shareCode));
       expect(
-        (await fakeFirestore.collection('share_codes').doc(baby.shareCode).get())
+        (await fakeFirestore
+                .collection('share_codes')
+                .doc(baby.shareCode)
+                .get())
             .exists,
         isFalse,
       );
       expect(
-        (await fakeFirestore.collection('share_codes').doc(joined.shareCode).get())
+        (await fakeFirestore
+                .collection('share_codes')
+                .doc(joined.shareCode)
+                .get())
             .data()?['babyId'],
         baby.id,
       );
@@ -143,7 +151,8 @@ void main() {
     test('leaveBaby removes only the current caregiver from a shared baby',
         () async {
       final baby = await service.addBaby('parent-1', 'Alice');
-      final sharedBaby = await service.joinBabyWithCode('parent-2', baby.shareCode);
+      final sharedBaby =
+          await service.joinBabyWithCode('parent-2', baby.shareCode);
 
       await service.leaveBaby(baby: sharedBaby!, uid: 'parent-2');
 

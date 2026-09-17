@@ -6,6 +6,7 @@ class Baby {
   final String ownerUid;
   final List<String> memberUids;
   final Map<String, String> memberLabels;
+  final Map<String, String> memberEmails;
   final String shareCode;
   final DateTime createdAt;
 
@@ -15,6 +16,7 @@ class Baby {
     required this.ownerUid,
     required this.memberUids,
     this.memberLabels = const {},
+    this.memberEmails = const {},
     required this.shareCode,
     required this.createdAt,
   });
@@ -27,6 +29,7 @@ class Baby {
       ownerUid: d['ownerUid'] as String,
       memberUids: List<String>.from(d['memberUids'] ?? []),
       memberLabels: Map<String, String>.from(d['memberLabels'] ?? {}),
+      memberEmails: Map<String, String>.from(d['memberEmails'] ?? {}),
       shareCode: d['shareCode'] as String? ?? '',
       createdAt: (d['createdAt'] as Timestamp).toDate(),
     );
@@ -37,6 +40,7 @@ class Baby {
         'ownerUid': ownerUid,
         'memberUids': memberUids,
         'memberLabels': memberLabels,
+        'memberEmails': memberEmails,
         'shareCode': shareCode,
         'createdAt': Timestamp.fromDate(createdAt),
       };
@@ -47,6 +51,7 @@ class Baby {
     String? ownerUid,
     List<String>? memberUids,
     Map<String, String>? memberLabels,
+    Map<String, String>? memberEmails,
     String? shareCode,
     DateTime? createdAt,
   }) {
@@ -56,6 +61,7 @@ class Baby {
       ownerUid: ownerUid ?? this.ownerUid,
       memberUids: memberUids ?? this.memberUids,
       memberLabels: memberLabels ?? this.memberLabels,
+      memberEmails: memberEmails ?? this.memberEmails,
       shareCode: shareCode ?? this.shareCode,
       createdAt: createdAt ?? this.createdAt,
     );
