@@ -1,3 +1,5 @@
+import '../l10n/app_locale.dart';
+
 enum PoopSize {
   small,
   medium,

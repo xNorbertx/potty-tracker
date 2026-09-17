@@ -295,7 +295,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
+          Text(
             context.tr('account'),
             style: TextStyle(
               color: Color(0xFF388E3C),
@@ -352,7 +352,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               ),
             ),
           const SizedBox(height: 28),
-          const Text(
+          Text(
             context.tr('dangerZone'),
             style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
           ),
