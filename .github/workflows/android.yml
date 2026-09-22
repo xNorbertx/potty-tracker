@@ -1,4 +1,4 @@
-name: Android APK checks and releases
+name: Android checks and releases
 
 on:
   pull_request:
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    name: Test and build APK
+    name: Test and build Android releases
     runs-on: ubuntu-22.04
     timeout-minutes: 40
     outputs:
@@ -85,6 +85,11 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.name }}
           VERSION_CODE: ${{ steps.version.outputs.code }}
         run: flutter build apk --release --build-name "$VERSION_NAME" --build-number "$VERSION_CODE"
+      - name: Build signed release App Bundle
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: flutter build appbundle --release --build-name "$VERSION_NAME" --build-number "$VERSION_CODE"
       - name: Verify APK signature, version and manifest
         env:
           VERSION_CODE: ${{ steps.version.outputs.code }}
@@ -96,7 +101,7 @@ jobs:
           grep -F "package: name='com.xnorbertx.pottytracker' versionCode='$VERSION_CODE'" "$RUNNER_TEMP/apk-manifest.txt"
           grep -F "launchable-activity: name='com.xnorbertx.potty_tracker.MainActivity'" "$RUNNER_TEMP/apk-manifest.txt"
           grep -F "uses-permission: name='android.permission.INTERNET'" "$RUNNER_TEMP/apk-manifest.txt"
-      - name: Package APK and checksum
+      - name: Package Android releases and checksums
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           VERSION_NAME: ${{ steps.version.outputs.name }}
@@ -105,9 +110,11 @@ jobs:
           mkdir -p release
           filename="potty-tracker-$VERSION_NAME-build.$VERSION_CODE.apk"
           cp build/app/outputs/flutter-apk/app-release.apk "release/$filename"
+          bundle="potty-tracker-$VERSION_NAME-build.$VERSION_CODE.aab"
+          cp build/app/outputs/bundle/release/app-release.aab "release/$bundle"
           cd release
-          sha256sum "$filename" > "$filename.sha256"
-      - name: Upload signed APK
+          sha256sum *.apk *.aab > SHA256SUMS.txt
+      - name: Upload signed Android releases
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -120,7 +127,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/android-release.p12" android/key.properties
 
   publish:
-    name: Publish downloadable APK
+    name: Publish downloadable Android releases
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
@@ -146,8 +153,8 @@ jobs:
             echo "Release $tag already exists; keeping the published APK."
             exit 0
           fi
-          printf 'Android %s (build %s)\n\nBuilt from commit %s.\n\nDownload the APK below and install it on Android. Installations of the old debug-signed APK must be uninstalled once before installing this release. Future builds use the same release certificate.\n\nThis app connects to the existing Firebase diary.\n' \
+          printf 'Android %s (build %s)\n\nBuilt from commit %s.\n\nAPK: install directly on an Android device. Installations of the old debug-signed APK must be uninstalled once before installing this release. Future builds use the same release certificate.\n\nAAB: upload this bundle to a Google Play testing or production release; it is not installed directly on a phone.\n\nThis app connects to the existing Firebase diary.\n' \
             "$VERSION_NAME" "$VERSION_CODE" "$COMMIT_SHA" > release-notes.md
-          gh release create "$tag" release/*.apk release/*.sha256 \
+          gh release create "$tag" release/*.apk release/*.aab release/SHA256SUMS.txt \
             --target "$COMMIT_SHA" --title "Android $VERSION_NAME (build $VERSION_CODE)" \
             --notes-file release-notes.md --latest
