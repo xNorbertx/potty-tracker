@@ -14,7 +14,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  bool _isLogin = true;
   bool _loading = false;
   bool _googleLoading = false;
   bool _microsoftLoading = false;
@@ -33,17 +32,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final auth = context.read<AuthService>();
-      if (_isLogin) {
-        await auth.signIn(
-          email: _emailCtrl.text.trim(),
-          password: _passwordCtrl.text,
-        );
-      } else {
-        await auth.register(
-          email: _emailCtrl.text.trim(),
-          password: _passwordCtrl.text,
-        );
-      }
+      await auth.signIn(
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text,
+      );
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -56,6 +48,44 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    final controller = TextEditingController(text: _emailCtrl.text.trim());
+    final formKey = GlobalKey<FormState>();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Reset your password'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: TextInputType.emailAddress,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Email'),
+            validator: (value) => value == null || !value.contains('@') ? 'Enter a valid email address' : null,
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () { if (formKey.currentState!.validate()) Navigator.pop(dialogContext, true); }, child: const Text('Send reset email')),
+        ],
+      ),
+    );
+    if (result != true) { controller.dispose(); return; }
+    try {
+      final sent = await context.read<AuthService>().sendPasswordResetEmail(controller.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(sent
+          ? 'Password reset email sent. Check your inbox.'
+          : 'This email address does not have a password. Use its sign-in provider instead.')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyError(error)), backgroundColor: Colors.red.shade400));
+    } finally {
+      controller.dispose();
     }
   }
 
@@ -123,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _isLogin ? 'Welcome back!' : 'Create your account',
+                  'Welcome back!',
                   style: const TextStyle(fontSize: 15, color: Colors.grey),
                 ),
                 const SizedBox(height: 36),
@@ -259,9 +289,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (v == null || v.isEmpty) {
                                 return 'Please enter your password';
                               }
-                              if (!_isLogin && v.length < 6) {
-                                return 'Password must be at least 6 characters';
-                              }
                               return null;
                             },
                           ),
@@ -284,19 +311,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     )
                                   : Text(
-                                      _isLogin ? 'Sign In' : 'Create Account'),
+                                      'Sign In'),
                             ),
                           ),
                           const SizedBox(height: 16),
                           TextButton(
-                            onPressed: () =>
-                                setState(() => _isLogin = !_isLogin),
-                            child: Text(
-                              _isLogin
-                                  ? "Don't have an account? Register"
-                                  : 'Already have an account? Sign in',
-                              style: const TextStyle(color: Color(0xFF4CAF50)),
-                            ),
+                            onPressed: _forgotPassword,
+                            child: const Text('Forgot password?'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pushNamed(context, '/register'),
+                            child: const Text("Don't have an account? Create one"),
                           ),
                         ],
                       ),

@@ -41,6 +41,14 @@ class AuthService {
     );
   }
 
+  /// Returns false when this email address exists but uses only an SSO provider.
+  Future<bool> sendPasswordResetEmail(String email) async {
+    final methods = await _auth.fetchSignInMethodsForEmail(email.trim());
+    if (!methods.contains(EmailAuthProvider.PROVIDER_ID)) return false;
+    await _auth.sendPasswordResetEmail(email: email.trim());
+    return true;
+  }
+
   Future<UserCredential?> signInWithGoogle() async {
     if (kIsWeb) {
       final googleProvider = GoogleAuthProvider();
