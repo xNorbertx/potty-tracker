@@ -1,0 +1,65 @@
+name: Deploy welcome email function
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - functions/**
+      - firebase.json
+      - .firebaserc
+      - .github/workflows/welcome-email.yml
+  push:
+    branches: [main]
+    paths:
+      - functions/**
+      - firebase.json
+      - .firebaserc
+      - .github/workflows/welcome-email.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+      - run: npm ci
+        working-directory: functions
+      - run: node --check index.js
+        working-directory: functions
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+      - run: npm ci
+        working-directory: functions
+      - name: Deploy function and Resend secret
+        env:
+          FIREBASE_RULES_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_RULES_SERVICE_ACCOUNT }}
+          RESEND_APIKEY: ${{ secrets.RESEND_APIKEY }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+        run: |
+          set -eu
+          test -n "$FIREBASE_RULES_SERVICE_ACCOUNT"
+          test -n "$RESEND_APIKEY"
+          printf '%s' "$FIREBASE_RULES_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          printf '%s' "$RESEND_APIKEY" > "$RUNNER_TEMP/resend-api-key"
+          npx --yes firebase-tools@15.30.1 functions:secrets:set RESEND_API_KEY \
+            --data-file "$RUNNER_TEMP/resend-api-key" --project baby-poop-tracker --non-interactive
+          npx --yes firebase-tools@15.30.1 deploy --only functions:sendWelcomeEmail \
+            --project baby-poop-tracker --non-interactive

@@ -8,6 +8,7 @@ import 'services/connection_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'widgets/app_status.dart';
 
@@ -38,6 +39,7 @@ class PottyTrackerApp extends StatelessWidget {
         routes: {
           '/': (_) => const SplashScreen(),
           '/login': (_) => const LoginScreen(),
+          '/register': (_) => const RegisterScreen(),
           '/home': (_) => const HomeScreen(),
         },
         builder: (context, child) => ConnectionStatusBanner(

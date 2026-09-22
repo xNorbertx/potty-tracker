@@ -268,3 +268,21 @@ C:\repos\flutter-sdk\bin\flutter.bat config --no-enable-windows-desktop --enable
 This is already configured on the initial Windows machine. If you later develop
 a native Windows build, enable Developer Mode and run
 `flutter config --enable-windows-desktop`.
+
+### Welcome emails
+
+New Firebase Authentication users receive one welcome email from
+`Potty Tracker <no_reply@potty-tracker.com>`. This includes email/password,
+Google, and Microsoft accounts. Password reset messages are sent by Firebase
+Authentication only to email/password accounts.
+
+The **Deploy welcome email function** workflow validates changes in pull
+requests and, after a merge to `main`, deploys the Auth creation trigger and
+updates the Firebase secret from the `RESEND_APIKEY` Actions secret. The
+Firebase project must be on a plan that supports Cloud Functions. The service
+account stored in `FIREBASE_RULES_SERVICE_ACCOUNT` needs permission to deploy
+Cloud Functions and manage the `RESEND_API_KEY` Secret Manager secret; grant
+**Cloud Functions Admin**, **Service Account User**, and **Secret Manager Admin**
+to that deployment service account before the first production deployment.
+
+The Resend API key is never bundled with the app or committed to Git.
