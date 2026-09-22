@@ -13,7 +13,7 @@ A baby poop tracking app built with Flutter + Firebase. Track consistency, view 
 ## Live App
 
 **Web:** https://xnorbertx.github.io/potty-tracker/
-**Android APK:** https://github.com/xNorbertx/potty-tracker/releases/latest
+**Android releases:** https://github.com/xNorbertx/potty-tracker/releases/latest
 
 ## Pull requests and automatic web deployment
 
@@ -52,15 +52,16 @@ have their own deployment workflow, described below.
 
 ## Setup
 
-### Android APK pipeline
+### Android release pipeline
 
-The **Android APK checks and releases** workflow is independent of web deployment.
-PRs run the tests and compile a signed release APK using placeholder Firebase
-settings and an ephemeral CI certificate. Those PR builds are not published.
-After each successful build of merged `main`, a production-signed APK and its
-SHA-256 checksum are attached to a new GitHub Release. Download the `.apk` from
-the repository's Releases page and install it on your phone. No Play Store
-account is required, and publishing does not automatically update installed apps.
+The **Android checks and releases** workflow is independent of web deployment.
+PRs run the tests and compile signed release APK and App Bundle (`.aab`) files
+using placeholder Firebase settings and an ephemeral CI certificate. Those PR
+builds are not published. After each successful build of merged `main`, the
+production-signed APK, Play-uploadable AAB, and SHA-256 checksums are attached
+to a new GitHub Release. Install the `.apk` directly on a phone; upload the
+`.aab` to a Google Play test or production release. An AAB is not installed
+directly and Play Store publishing does not automatically update sideloaded APKs.
 
 The readable version comes from `pubspec.yaml` (starting at **1.3.0**, following
 the existing 1.2.x releases). Android's numeric version code is
@@ -110,7 +111,8 @@ flutter build apk --release --build-name 1.3.0 --build-number 100007
 ```
 
 The pipeline verifies the APK signature, package ID, version code, launch
-activity and internet permission. Device installation and authentication still
+activity and internet permission. Each bundle has the same signing certificate
+and version code as its paired APK. Device installation and authentication still
 need a real-phone smoke test. Failed Android builds do not block web deployment.
 
 ### Prerequisites

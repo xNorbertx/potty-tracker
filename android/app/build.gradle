@@ -13,7 +13,7 @@ if (signingPropertiesFile.exists()) {
 
 android {
     namespace = "com.xnorbertx.pottytracker"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -28,7 +28,7 @@ android {
     defaultConfig {
         applicationId = "com.xnorbertx.pottytracker"
         minSdk = 23
-        targetSdk = 34
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
