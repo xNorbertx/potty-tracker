@@ -13,6 +13,7 @@ import {
   getDocs,
   query,
   setDoc,
+  serverTimestamp,
   updateDoc,
   where,
   writeBatch,
@@ -221,4 +222,22 @@ test('an unverified joiner can accept a valid invite but cannot reissue its repl
   batch.delete(doc(stranger, 'share_codes', 'DEF456'));
   batch.set(doc(stranger, 'share_codes', 'GHI789'), { babyId });
   await assertFails(batch.commit());
+});
+
+test('achievement days survive edits; caregivers can create one celebration claim', async () => {
+  await seedDiary();
+  const db = testEnv.authenticatedContext('caregiver-a').firestore();
+  const entryRef = doc(db, 'babies', babyId, 'entries', 'entry-1');
+  await assertSucceeds(updateDoc(entryRef, { achievementDay: '2026-01-02' }));
+  await assertSucceeds(updateDoc(entryRef, { timestamp: new Date('2026-01-03T10:00:00Z') }));
+  await assertFails(updateDoc(entryRef, { achievementDay: '2026-01-03' }));
+  const claim = doc(db, 'babies', babyId, 'achievement_celebrations', '7-2026-01-07');
+  const data = { days: 7, loggedBy: 'caregiver-a', createdAt: serverTimestamp() };
+  await assertSucceeds(setDoc(claim, data));
+  await assertFails(setDoc(claim, data));
+  const stranger = testEnv.authenticatedContext('stranger').firestore();
+  await assertFails(getDoc(doc(stranger, 'babies', babyId, 'achievement_celebrations', '7-2026-01-07')));
+  await assertFails(setDoc(doc(stranger, 'babies', babyId, 'achievement_celebrations', '14-2026-01-14'), {
+    ...data, loggedBy: 'stranger',
+  }));
 });

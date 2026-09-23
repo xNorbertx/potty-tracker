@@ -126,7 +126,18 @@ service cloud.firestore {
         allow update: if isBabyMember(babyId) &&
           request.resource.data.babyId == resource.data.babyId &&
           request.resource.data.createdAt == resource.data.createdAt &&
+          (!resource.data.keys().hasAny(['achievementDay']) ||
+            request.resource.data.achievementDay == resource.data.achievementDay) &&
           request.resource.data.loggedBy == request.auth.uid;
+      }
+
+      match /achievement_celebrations/{awardId} {
+        allow read, delete: if isBabyMember(babyId);
+        allow create: if isBabyMember(babyId) &&
+          request.resource.data.keys().hasOnly(['days', 'loggedBy', 'createdAt']) &&
+          request.resource.data.days in [7, 14, 30] &&
+          request.resource.data.loggedBy == request.auth.uid &&
+          request.resource.data.createdAt == request.time;
       }
     }
 
