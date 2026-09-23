@@ -9,6 +9,8 @@ import '../models/poop_entry.dart';
 import '../services/auth_service.dart';
 import '../services/diary_pdf_export_service.dart';
 import '../services/firestore_service.dart';
+import '../services/verification_service.dart';
+import '../widgets/email_verification_card.dart';
 import '../widgets/app_status.dart';
 
 class BabyOverviewScreen extends StatefulWidget {
@@ -22,6 +24,7 @@ class BabyOverviewScreen extends StatefulWidget {
 
 class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
   bool _exporting = false;
+  bool _inviting = false;
   @override
   void initState() {
     super.initState();
@@ -50,7 +53,24 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
     );
   }
 
-  void _showShareDialog(BuildContext context, Baby currentBaby) {
+  Future<void> _showShareDialog(BuildContext context, Baby currentBaby) async {
+    setState(() => _inviting = true);
+    String code;
+    try {
+      code = await context
+          .read<VerificationService>()
+          .createInvitation(currentBaby.id);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(error))),
+        );
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _inviting = false);
+    }
+    if (!context.mounted) return;
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -69,7 +89,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                 border: Border.all(color: const Color(0xFF4CAF50)),
               ),
               child: Text(
-                currentBaby.shareCode,
+                code,
                 style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -81,7 +101,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: currentBaby.shareCode));
+                Clipboard.setData(ClipboardData(text: code));
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Invite code copied.')),
@@ -236,10 +256,25 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => _showShareDialog(context, currentBaby),
-                    icon: const Icon(Icons.person_add_alt_1),
-                    label: const Text('Invite a caregiver'),
+                  StreamBuilder<bool>(
+                    stream: uid == null
+                        ? null
+                        : context
+                            .read<VerificationService>()
+                            .verifiedStream(uid, auth.currentUserEmail),
+                    builder: (context, verification) =>
+                        verification.data == true && !verification.hasError
+                            ? OutlinedButton.icon(
+                                onPressed: _inviting
+                                    ? null
+                                    : () =>
+                                        _showShareDialog(context, currentBaby),
+                                icon: const Icon(Icons.person_add_alt_1),
+                                label: Text(_inviting
+                                    ? 'Preparing invitation...'
+                                    : 'Invite a caregiver'),
+                              )
+                            : const EmailVerificationCard(),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(

@@ -198,7 +198,7 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content:
-                          const Text('Invite code not found or already used.'),
+                          const Text('This invite code is unavailable. Ask a verified caregiver for a new one.'),
                       backgroundColor: Colors.red.shade400,
                     ),
                   );

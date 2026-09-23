@@ -16,7 +16,8 @@ concurrency:
 
 jobs:
   build:
-    name: Test and build Android releases
+    # Keep this status name aligned with main's required checks.
+    name: Test and build APK
     runs-on: ubuntu-22.04
     timeout-minutes: 40
     outputs:

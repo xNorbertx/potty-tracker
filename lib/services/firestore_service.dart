@@ -106,6 +106,8 @@ class FirestoreService {
         .doc(code.toUpperCase().trim())
         .get();
     if (!codeDoc.exists) return null;
+    // Legacy and automatically rotated placeholders have no verified issuer.
+    if (!codeDoc.data()!.containsKey('issuedBy')) return null;
     final babyId = codeDoc.data()!['babyId'] as String;
     final babyRef = _babiesRef.doc(babyId);
 
@@ -137,7 +139,7 @@ class FirestoreService {
       if (!joinedBaby.exists) return null;
       return Baby.fromFirestore(joinedBaby);
     } on FirebaseException catch (e) {
-      if (e.code == 'not-found') return null;
+      if (e.code == 'not-found' || e.code == 'permission-denied') return null;
       rethrow;
     }
   }

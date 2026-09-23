@@ -5,6 +5,7 @@ import 'package:potty_tracker/models/poop_color.dart';
 import 'package:potty_tracker/models/poop_size.dart';
 import 'package:potty_tracker/services/firestore_service.dart';
 import 'package:potty_tracker/models/caregiver_profile.dart';
+import 'package:potty_tracker/models/baby.dart';
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
@@ -14,6 +15,14 @@ void main() {
     fakeFirestore = FakeFirebaseFirestore();
     service = FirestoreService(db: fakeFirestore);
   });
+
+  // Server-issued fixture; production issuance is tested in functions/.
+  Future<void> issueInvite(Baby baby) =>
+      fakeFirestore.collection('share_codes').doc(baby.shareCode).set({
+        'babyId': baby.id,
+        'issuedBy': baby.ownerUid,
+        'issuerEmail': 'parent@example.com',
+      });
 
   group('FirestoreService - caregiver profiles', () {
     test('saves and reads a caregiver profile', () async {
@@ -71,6 +80,7 @@ void main() {
 
     test('joinBabyWithCode adds user to memberUids', () async {
       final baby = await service.addBaby('user1', 'Charlie');
+      await issueInvite(baby);
       final joined = await service.joinBabyWithCode(
         'user2',
         baby.shareCode,
@@ -106,6 +116,7 @@ void main() {
     test('joinBabyWithCode ignores casing and surrounding whitespace',
         () async {
       final baby = await service.addBaby('user1', 'Charlie');
+      await issueInvite(baby);
 
       final joined = await service.joinBabyWithCode(
         'user2',
@@ -121,6 +132,11 @@ void main() {
       expect(result, isNull);
     });
 
+    test('legacy codes cannot grant new access', () async {
+      final baby = await service.addBaby('user1', 'Alice');
+      expect(await service.joinBabyWithCode('user2', baby.shareCode), isNull);
+    });
+
     test('updateBabyName updates only the requested baby', () async {
       final first = await service.addBaby('user1', 'Alice');
       final second = await service.addBaby('user1', 'Bea');
@@ -134,6 +150,7 @@ void main() {
 
     test('removeAccountData removes a user from a shared baby', () async {
       final baby = await service.addBaby('parent-1', 'Alice');
+      await issueInvite(baby);
       final sharedBaby =
           await service.joinBabyWithCode('parent-2', baby.shareCode);
 
@@ -151,6 +168,7 @@ void main() {
     test('leaveBaby removes only the current caregiver from a shared baby',
         () async {
       final baby = await service.addBaby('parent-1', 'Alice');
+      await issueInvite(baby);
       final sharedBaby =
           await service.joinBabyWithCode('parent-2', baby.shareCode);
 
