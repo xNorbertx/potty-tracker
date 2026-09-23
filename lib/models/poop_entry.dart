@@ -7,6 +7,12 @@ class PoopEntry {
   final String id;
   final String babyId;
   final DateTime timestamp;
+  final String? _achievementDay;
+
+  String get achievementDay => _achievementDay ?? dayKey(timestamp);
+
+  static String dayKey(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   final Consistency consistency;
   final PoopSize? size;
   final PoopColor? color;
@@ -20,6 +26,7 @@ class PoopEntry {
     required this.id,
     required this.babyId,
     required this.timestamp,
+    String? achievementDay,
     required this.consistency,
     this.size,
     this.color,
@@ -28,7 +35,7 @@ class PoopEntry {
     this.loggedByName,
     this.loggedByEmail,
     required this.createdAt,
-  });
+  }) : _achievementDay = achievementDay;
 
   factory PoopEntry.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -36,6 +43,7 @@ class PoopEntry {
       id: doc.id,
       babyId: data['babyId'] as String,
       timestamp: (data['timestamp'] as Timestamp).toDate(),
+      achievementDay: data['achievementDay'] as String?,
       consistency: ConsistencyExtension.fromString(
         data['consistency'] as String? ?? 'soft',
       ),
@@ -53,6 +61,7 @@ class PoopEntry {
     return {
       'babyId': babyId,
       'timestamp': Timestamp.fromDate(timestamp),
+      'achievementDay': achievementDay,
       'consistency': consistency.value,
       if (size != null) 'size': size!.value,
       if (color != null) 'color': color!.value,
@@ -81,6 +90,7 @@ class PoopEntry {
       id: id ?? this.id,
       babyId: babyId ?? this.babyId,
       timestamp: timestamp ?? this.timestamp,
+      achievementDay: achievementDay,
       consistency: consistency ?? this.consistency,
       size: size ?? this.size,
       color: color ?? this.color,

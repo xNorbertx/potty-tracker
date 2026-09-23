@@ -12,6 +12,8 @@ import '../widgets/consistency_selector.dart';
 import '../widgets/size_selector.dart';
 import '../widgets/poop_color_selector.dart';
 import '../widgets/app_status.dart';
+import '../widgets/achievement_badges.dart';
+import '../models/achievement.dart';
 
 class LogPoopScreen extends StatefulWidget {
   final Baby baby;
@@ -36,6 +38,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   PoopColor? _selectedColor;
   final _notesCtrl = TextEditingController();
   bool _loading = false;
+  bool _saved = false;
 
   bool get _isEditing => widget.entry != null;
 
@@ -128,6 +131,15 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
           : auth.currentUserEmail;
       final notes =
           _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim();
+      AchievementSummary? before;
+      if (!_isEditing) {
+        try {
+          before = AchievementSummary.fromEntries(
+              await firestore.getEntries(widget.baby.id));
+        } catch (_) {
+          // An optional celebration must never prevent saving a diary entry.
+        }
+      }
       if (_isEditing) {
         await firestore.updateEntry(
           uid: uid,
@@ -155,6 +167,25 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
         );
       }
       if (!mounted) return;
+      setState(() {
+        _saved = true;
+        _loading = false;
+      });
+      if (!_isEditing && before != null) {
+        List<AchievementAward> awards = [];
+        try {
+          final after = AchievementSummary.fromEntries(
+              await firestore.getEntries(widget.baby.id));
+          awards = await firestore.claimAchievementCelebrations(
+              widget.baby.id, uid, after.newlyEarnedSince(before));
+        } catch (_) {
+          // The log has already saved. Never report it as failed (or risk a
+          // duplicate retry) because the optional celebration is unavailable.
+        }
+        if (!mounted) return;
+        await showAchievementCelebration(context, widget.baby.name, awards);
+        if (!mounted) return;
+      }
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -274,7 +305,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _loading ? null : _save,
+                onPressed: _loading || _saved ? null : _save,
                 child: _loading
                     ? const SizedBox(
                         height: 20,

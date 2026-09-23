@@ -6,6 +6,7 @@ import 'package:potty_tracker/models/poop_size.dart';
 import 'package:potty_tracker/services/firestore_service.dart';
 import 'package:potty_tracker/models/caregiver_profile.dart';
 import 'package:potty_tracker/models/baby.dart';
+import 'package:potty_tracker/models/achievement.dart';
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
@@ -352,6 +353,7 @@ void main() {
       final updated = (await service.entriesStream(baby.id).first).single;
       expect(updated.id, entry.id);
       expect(updated.timestamp, DateTime(2024, 6, 16, 10, 30));
+      expect(updated.achievementDay, '2024-06-15');
       expect(updated.consistency, Consistency.watery);
       expect(updated.size, isNull);
       expect(updated.color, isNull);
@@ -388,6 +390,49 @@ void main() {
       // Should be descending (most recent first)
       expect(entries[0].timestamp.compareTo(entries[1].timestamp),
           greaterThanOrEqualTo(0));
+    });
+
+    test('legacy entry edits freeze the old day across reloads', () async {
+      final baby = await service.addBaby('user1', 'Alice');
+      final ref = fakeFirestore
+          .collection('babies')
+          .doc(baby.id)
+          .collection('entries')
+          .doc('legacy');
+      await ref.set({
+        'babyId': baby.id,
+        'timestamp': DateTime(2024, 6, 15),
+        'consistency': 'soft',
+        'createdAt': DateTime(2024, 6, 15),
+      });
+      await service.updateEntry(
+          uid: 'user1',
+          babyId: baby.id,
+          entryId: 'legacy',
+          timestamp: DateTime(2024, 6, 20),
+          consistency: Consistency.hard);
+      final reloaded = (await service.getEntries(baby.id)).single;
+      expect(reloaded.achievementDay, '2024-06-15');
+      expect(reloaded.timestamp, DateTime(2024, 6, 20));
+    });
+
+    test('celebrations are shared, claimed once, and cleaned up with the baby',
+        () async {
+      final baby = await service.addBaby('user1', 'Alice');
+      final awards = [AchievementAward(7, DateTime(2024, 6, 7))];
+      expect(
+          await service.claimAchievementCelebrations(baby.id, 'user1', awards),
+          hasLength(1));
+      expect(
+          await service.claimAchievementCelebrations(baby.id, 'user2', awards),
+          isEmpty);
+      await service.deleteBaby(baby);
+      final remaining = await fakeFirestore
+          .collection('babies')
+          .doc(baby.id)
+          .collection('achievement_celebrations')
+          .get();
+      expect(remaining.docs, isEmpty);
     });
   });
 }

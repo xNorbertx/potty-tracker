@@ -7,6 +7,7 @@ import '../models/poop_entry.dart';
 import '../models/consistency.dart';
 import '../models/poop_size.dart';
 import '../models/poop_color.dart';
+import '../models/achievement.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db;
@@ -206,8 +207,13 @@ class FirestoreService {
 
   Future<void> deleteBaby(Baby baby) async {
     final entryDocs = await _entriesRef(baby.id).get();
+    final celebrationDocs = await _babiesRef
+        .doc(baby.id)
+        .collection('achievement_celebrations')
+        .get();
     final operations = <DocumentReference<Map<String, dynamic>>>[
       ...entryDocs.docs.map((doc) => doc.reference),
+      ...celebrationDocs.docs.map((doc) => doc.reference),
       if (baby.shareCode.isNotEmpty)
         _db.collection('share_codes').doc(baby.shareCode),
       _babiesRef.doc(baby.id),
@@ -233,6 +239,36 @@ class FirestoreService {
       final list = snap.docs.map(PoopEntry.fromFirestore).toList();
       list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return list;
+    });
+  }
+
+  Future<List<PoopEntry>> getEntries(String babyId) async {
+    final snapshot = await _entriesRef(babyId).get(
+      const GetOptions(source: Source.server),
+    );
+    return snapshot.docs.map(PoopEntry.fromFirestore).toList();
+  }
+
+  Future<List<AchievementAward>> claimAchievementCelebrations(
+      String babyId, String uid, List<AchievementAward> awards) async {
+    if (awards.isEmpty) return [];
+    final collection =
+        _babiesRef.doc(babyId).collection('achievement_celebrations');
+    return _db.runTransaction((tx) async {
+      final snapshots = await Future.wait(
+          awards.map((award) => tx.get(collection.doc(award.id))));
+      final fresh = <AchievementAward>[];
+      for (var i = 0; i < awards.length; i++) {
+        if (!snapshots[i].exists) {
+          fresh.add(awards[i]);
+          tx.set(snapshots[i].reference, {
+            'days': awards[i].days,
+            'loggedBy': uid,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+      return fresh;
     });
   }
 
@@ -281,7 +317,12 @@ class FirestoreService {
     PoopColor? color,
     String? notes,
   }) async {
-    await _entriesRef(babyId).doc(entryId).update({
+    final reference = _entriesRef(babyId).doc(entryId);
+    final original = PoopEntry.fromFirestore(await reference.get());
+    await reference.update({
+      // Freeze the existing day for legacy entries too: editing never moves
+      // their contribution between achievement streaks.
+      'achievementDay': original.achievementDay,
       'timestamp': Timestamp.fromDate(timestamp),
       'consistency': consistency.value,
       'size': size?.value ?? FieldValue.delete(),

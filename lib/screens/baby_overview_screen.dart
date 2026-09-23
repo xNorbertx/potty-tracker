@@ -11,6 +11,7 @@ import '../services/diary_pdf_export_service.dart';
 import '../services/firestore_service.dart';
 import '../services/verification_service.dart';
 import '../widgets/email_verification_card.dart';
+import '../widgets/achievement_badges.dart';
 import '../widgets/app_status.dart';
 
 class BabyOverviewScreen extends StatefulWidget {
@@ -217,6 +218,16 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
               body: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
+                  if (entrySnapshot.hasData) ...[
+                    AchievementBadges(
+                        key: ValueKey(currentBaby.id), entries: entries),
+                    const SizedBox(height: 24),
+                  ] else
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: Text(entrySnapshot.hasError
+                            ? 'Could not load achievements. Reopen this page to try again.'
+                            : 'Loading achievements...')),
                   const Text(
                     'Caregivers',
                     style: TextStyle(
