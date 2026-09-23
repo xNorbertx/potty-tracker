@@ -65,25 +65,43 @@ class _LoginScreenState extends State<LoginScreen> {
             keyboardType: TextInputType.emailAddress,
             autofocus: true,
             decoration: const InputDecoration(labelText: 'Email'),
-            validator: (value) => value == null || !value.contains('@') ? 'Enter a valid email address' : null,
+            validator: (value) => value == null || !value.contains('@')
+                ? 'Enter a valid email address'
+                : null,
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () { if (formKey.currentState!.validate()) Navigator.pop(dialogContext, true); }, child: const Text('Send reset email')),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate())
+                  Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Send reset email')),
         ],
       ),
     );
-    if (result != true) { controller.dispose(); return; }
+    if (result != true) {
+      controller.dispose();
+      return;
+    }
     try {
-      final sent = await context.read<AuthService>().sendPasswordResetEmail(controller.text);
+      await context.read<AuthService>().sendPasswordResetEmail(controller.text);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(sent
-          ? 'Password reset email sent. Check your inbox.'
-          : 'This email address does not have a password. Use its sign-in provider instead.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'If this email has a password, a reset link will arrive shortly.',
+          ),
+        ),
+      );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyError(error)), backgroundColor: Colors.red.shade400));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(friendlyError(error)),
+          backgroundColor: Colors.red.shade400));
     } finally {
       controller.dispose();
     }
@@ -310,8 +328,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : Text(
-                                      'Sign In'),
+                                  : Text('Sign In'),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -320,8 +337,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: const Text('Forgot password?'),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.pushNamed(context, '/register'),
-                            child: const Text("Don't have an account? Create one"),
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/register'),
+                            child:
+                                const Text("Don't have an account? Create one"),
                           ),
                         ],
                       ),
