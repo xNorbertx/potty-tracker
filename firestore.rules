@@ -73,6 +73,7 @@ service cloud.firestore {
       let before = babyBefore(babyId).data;
       let after = babyAfter(babyId).data;
       return isSignedIn() && !(request.auth.uid in before.memberUids) &&
+        isVerifiedInvitation(before.shareCode, babyId, before.memberUids) &&
         after.diff(before).affectedKeys().hasOnly([
           'memberUids', 'memberLabels', 'memberEmails', 'shareCode'
         ]) &&
@@ -95,6 +96,18 @@ service cloud.firestore {
         !existsAfter(/databases/$(database)/documents/share_codes/$(before.shareCode)) &&
         existsAfter(/databases/$(database)/documents/share_codes/$(after.shareCode)) &&
         getAfter(/databases/$(database)/documents/share_codes/$(after.shareCode)).data.babyId == babyId;
+    }
+
+    function isVerifiedInvitation(code, babyId, members) {
+      let invitation = get(/databases/$(database)/documents/share_codes/$(code)).data;
+      return invitation.keys().hasAll(['issuedBy', 'issuerEmail']) &&
+        invitation.babyId == babyId && invitation.issuedBy in members &&
+        get(/databases/$(database)/documents/verified_emails/$(invitation.issuedBy)).data.email == invitation.issuerEmail;
+    }
+
+    // Only the server can record proof or attach an issuer to an invitation.
+    match /verified_emails/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
     }
 
     match /babies/{babyId} {

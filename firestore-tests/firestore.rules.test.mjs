@@ -63,7 +63,10 @@ async function seedDiary({ legacy = false } = {}) {
       loggedBy: 'caregiver-a',
       createdAt: new Date('2026-01-02T10:00:00Z'),
     });
-    await setDoc(doc(db, 'share_codes', originalCode), { babyId });
+    await setDoc(doc(db, 'share_codes', originalCode), {
+      babyId, issuedBy: 'caregiver-a', issuerEmail: 'ada@example.com',
+    });
+    await setDoc(doc(db, 'verified_emails', 'caregiver-a'), { email: 'ada@example.com' });
   });
 }
 
@@ -151,4 +154,71 @@ test('an invite cannot be used without consuming and replacing its code', async 
       memberUids: ['caregiver-a', 'caregiver-b'],
     }),
   );
+});
+
+function joinBatch(db) {
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'babies', babyId), {
+    memberUids: ['caregiver-a', 'caregiver-b'],
+    memberLabels: { ...baby.memberLabels, 'caregiver-b': 'Other parent' },
+    memberEmails: { ...baby.memberEmails, 'caregiver-b': 'other@example.com' },
+    shareCode: 'DEF456',
+  });
+  batch.delete(doc(db, 'share_codes', originalCode));
+  batch.set(doc(db, 'share_codes', 'DEF456'), { babyId });
+  return batch;
+}
+
+test('legacy codes cannot join, even when the owner has verified', async () => {
+  await seedDiary();
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'share_codes', originalCode), { babyId });
+  });
+  await assertFails(joinBatch(testEnv.authenticatedContext('caregiver-b').firestore()).commit());
+});
+
+test('SSO email_verified claim cannot replace app verification or forge an invitation', async () => {
+  await seedDiary();
+  const db = testEnv.authenticatedContext('caregiver-b', { email_verified: true }).firestore();
+  await assertFails(setDoc(doc(db, 'verified_emails', 'caregiver-b'), { email: 'other@example.com' }));
+  await assertFails(setDoc(doc(db, 'share_codes', 'NEW123'), {
+    babyId, issuedBy: 'caregiver-a', issuerEmail: 'ada@example.com',
+  }));
+  await assertFails(getDoc(doc(db, 'verification_requests', 'caregiver-b')));
+  await assertFails(getDoc(doc(db, 'verified_emails', 'caregiver-a')));
+});
+
+test('mismatched proof and issuers who left the baby cannot authorize a join', async () => {
+  await seedDiary();
+  const db = testEnv.authenticatedContext('caregiver-b').firestore();
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'verified_emails', 'caregiver-a'), { email: 'changed@example.com' });
+  });
+  await assertFails(joinBatch(db).commit());
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'verified_emails', 'caregiver-a'), { email: 'ada@example.com' });
+    await updateDoc(doc(context.firestore(), 'share_codes', originalCode), { issuedBy: 'departed' });
+    await setDoc(doc(context.firestore(), 'verified_emails', 'departed'), { email: 'ada@example.com' });
+  });
+  await assertFails(joinBatch(db).commit());
+});
+
+test('an unverified joiner can accept a valid invite but cannot reissue its replacement', async () => {
+  await seedDiary();
+  const db = testEnv.authenticatedContext('caregiver-b').firestore();
+  await assertSucceeds(joinBatch(db).commit());
+  await assertFails(updateDoc(doc(db, 'share_codes', 'DEF456'), {
+    issuedBy: 'caregiver-b', issuerEmail: 'other@example.com',
+  }));
+  const stranger = testEnv.authenticatedContext('stranger').firestore();
+  const batch = writeBatch(stranger);
+  batch.update(doc(stranger, 'babies', babyId), {
+    memberUids: ['caregiver-a', 'caregiver-b', 'stranger'],
+    memberLabels: { ...baby.memberLabels, 'caregiver-b': 'Other parent', stranger: 'Stranger' },
+    memberEmails: { ...baby.memberEmails, 'caregiver-b': 'other@example.com', stranger: 's@example.com' },
+    shareCode: 'GHI789',
+  });
+  batch.delete(doc(stranger, 'share_codes', 'DEF456'));
+  batch.set(doc(stranger, 'share_codes', 'GHI789'), { babyId });
+  await assertFails(batch.commit());
 });

@@ -6,6 +6,7 @@ import '../models/caregiver_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
+import '../widgets/email_verification_card.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   final List<Baby> babies;
@@ -269,6 +270,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               child: Text(auth.currentUser!.email!,
                   style: const TextStyle(color: Colors.grey)),
             ),
+          const EmailVerificationCard(),
           StreamBuilder<CaregiverProfile?>(
             stream: auth.currentUserId == null
                 ? null

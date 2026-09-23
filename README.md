@@ -271,6 +271,10 @@ a native Windows build, enable Developer Mode and run
 
 ### Welcome emails
 
+Welcome emails now include an app-specific verification link for every sign-in
+provider. See [email verification and invitations](docs/email-verification.md)
+for behavior, legacy-code migration, security checks, and deployment details.
+
 New Firebase Authentication users receive one welcome email from
 `Potty Tracker <no_reply@potty-tracker.com>`. This includes email/password,
 Google, and Microsoft accounts. Password reset messages are sent by Firebase

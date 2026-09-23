@@ -4,6 +4,12 @@ import '../services/connection_service.dart';
 
 String friendlyError(Object error) {
   final raw = error.toString().toLowerCase();
+  if (raw.contains('resource-exhausted')) {
+    return 'Please wait one minute before requesting another email.';
+  }
+  if (raw.contains('failed-precondition')) {
+    return 'Verify your email in Account settings before inviting a caregiver.';
+  }
   if (raw.contains('network-request-failed') ||
       raw.contains('unavailable') ||
       raw.contains('network')) {
