@@ -14,6 +14,8 @@ function createVerificationService({ db, auth, sendEmail, endpoint, now = Date.n
     const tokenHash = hash(token);
     const sentAt = now();
     await db.runTransaction(async (tx) => {
+      const blocked = await tx.get(db.collection('deletion_blocks').doc(uid));
+      if (blocked.exists) throw new Error('account-deleted');
       const previous = await tx.get(ref);
       if (previous.exists && sentAt - previous.data().sentAt < 60000) {
         throw new Error('resend-too-soon');
@@ -48,6 +50,8 @@ function createVerificationService({ db, auth, sendEmail, endpoint, now = Date.n
     const user = await auth.getUser(uid);
     const ref = db.collection('verification_requests').doc(uid);
     await db.runTransaction(async (tx) => {
+      const blocked = await tx.get(db.collection('deletion_blocks').doc(uid));
+      if (blocked.exists) throw new Error('invalid-link');
       const request = await tx.get(ref);
       const data = request.data();
       if (!data || data.tokenHash !== hash(token) || data.expiresAt <= now() ||

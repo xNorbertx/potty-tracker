@@ -11,6 +11,8 @@ function createInvitationService({ db, auth }) {
     for (let attempt = 0; attempt < 5; attempt++) {
       const code = Array.from({ length: 6 }, () => alphabet[randomInt(alphabet.length)]).join('');
       const result = await db.runTransaction(async (tx) => {
+        const blocked = await tx.get(db.collection('deletion_blocks').doc(uid));
+        if (blocked.exists) throw new Error('not-verified');
         const babyRef = db.collection('babies').doc(babyId);
         const baby = await tx.get(babyRef);
         const proof = await tx.get(db.collection('verified_emails').doc(uid));
