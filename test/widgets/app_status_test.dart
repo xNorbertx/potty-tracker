@@ -41,9 +41,7 @@ void main() {
     changes.add([ConnectivityResult.none]);
     await tester.pump();
 
-    expect(
-        find.text("You're offline. Changes will sync when you're back online."),
-        findsOneWidget);
+    expect(find.text("You're offline."), findsOneWidget);
     expect(find.text('Diary'), findsOneWidget);
   });
 

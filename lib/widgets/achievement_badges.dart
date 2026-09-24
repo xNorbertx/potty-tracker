@@ -29,7 +29,7 @@ class _AchievementBadgesState extends State<AchievementBadges> {
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF285E2B))),
             const SizedBox(height: 6),
-            const Text('A poop recorded each day.'),
+            const Text('Streaks'),
             const SizedBox(height: 16),
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               for (final days in achievementMilestones)
@@ -37,9 +37,6 @@ class _AchievementBadgesState extends State<AchievementBadges> {
                     child: AchievementBadge(
                         days: days, count: summary.count(days))),
             ]),
-            const SizedBox(height: 12),
-            const Text('Each new streak can earn these badges once.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF526353))),
           ],
         ),
       ),
@@ -124,10 +121,6 @@ class AchievementBadge extends StatelessWidget {
           Text('$days days',
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w600)),
-          if (!earned)
-            const Text('Not yet earned',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: Color(0xFF526353))),
         ]),
       ),
     );
@@ -164,8 +157,6 @@ Future<void> showAchievementCelebration(BuildContext context, String babyName,
               textAlign: TextAlign.center,
               style: const TextStyle(
                   color: Color(0xFF285E2B), fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          const Text('A poop recorded each day.', textAlign: TextAlign.center),
         ],
       )),
       actionsAlignment: MainAxisAlignment.center,

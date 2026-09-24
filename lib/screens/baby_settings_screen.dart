@@ -197,8 +197,8 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
                 if (baby == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content:
-                          const Text('This invite code is unavailable. Ask a verified caregiver for a new one.'),
+                      content: const Text(
+                          'Invite code unavailable. Ask for a new one.'),
                       backgroundColor: Colors.red.shade400,
                     ),
                   );
@@ -242,8 +242,8 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
             isShared ? 'Leave ${baby.name}\'s diary?' : 'Remove ${baby.name}?'),
         content: Text(
           isShared
-              ? 'You will lose access to this diary. The other caregivers and all poop logs will remain.'
-              : 'This will permanently remove this baby and all poop logs for them. This cannot be undone.',
+              ? 'You will lose access. Other caregivers will keep this diary and its entries.'
+              : 'This baby and all their poop logs will be permanently deleted.',
         ),
         actions: [
           TextButton(
@@ -354,7 +354,7 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
             TextButton.icon(
               onPressed: _joinBaby,
               icon: const Icon(Icons.group_add_outlined),
-              label: const Text('Join a baby with an invite code'),
+              label: const Text('Join with invite code'),
             ),
           ],
         ),

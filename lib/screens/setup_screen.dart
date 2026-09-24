@@ -71,12 +71,6 @@ class _SetupScreenState extends State<SetupScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  "We'll use this to personalize your poop diary 💩",
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
                 const SizedBox(height: 36),
                 Form(
                   key: _formKey,

@@ -26,13 +26,13 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
       String message;
       if (resend) {
         await service.resend();
-        message = 'Verification email sent. Check your inbox and spam folder.';
+        message = 'Verification email sent. Check your inbox.';
       } else {
         final verified =
             await service.refresh(auth.currentUserId!, auth.currentUserEmail);
         message = verified
-            ? 'Email verified. You can now invite caregivers.'
-            : 'Not verified yet. Open the link in your email, then check again.';
+            ? 'Email verified.'
+            : 'Open the link in your verification email, then check again.';
       }
       if (mounted) setState(() => _feedback = message);
     } catch (error) {
@@ -71,17 +71,15 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
                           verified ? 'Email verified' : 'Verify your email',
                           style: const TextStyle(fontWeight: FontWeight.bold))),
                 ]),
-                const SizedBox(height: 8),
-                Text(verified
-                    ? 'Caregiver invitations are unlocked.'
-                    : 'Verify your email to invite a caregiver. You can already track poops and accept invitations.'),
                 if (!verified) ...[
+                  const SizedBox(height: 8),
+                  const Text('Verify your email to invite caregivers.'),
                   TextButton(
                       onPressed: _busy ? null : () => _run(true),
                       child: const Text('Resend verification email')),
                   TextButton(
                       onPressed: _busy ? null : () => _run(false),
-                      child: const Text('Check verification status')),
+                      child: const Text('Check status')),
                 ],
                 if (_busy) const LinearProgressIndicator(),
                 if (_feedback != null || snapshot.hasError)

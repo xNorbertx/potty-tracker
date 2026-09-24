@@ -192,13 +192,13 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     );
 
     if (sole.isEmpty) {
-      return 'Your account will be permanently deleted. The other parent will keep access to your baby data.';
+      return 'Your account will be permanently deleted. Shared diaries will stay with the other caregivers.';
     }
     final babyNames = sole.map((baby) => baby.name).join(', ');
     if (shared.isEmpty) {
-      return 'Your account will be permanently deleted. You are the only parent attached to $babyNames, so all data about ${sole.length == 1 ? 'your baby' : 'your babies'} — including poop logs — will also be permanently deleted.';
+      return 'Your account and all data for $babyNames, including poop logs, will be permanently deleted.';
     }
-    return 'Your account will be permanently deleted. Data for $babyNames will also be permanently deleted because no other parent is attached. Shared baby data will remain available to the other parent.';
+    return 'Your account and all data for $babyNames, including poop logs, will be permanently deleted. Shared diaries will stay with the other caregivers.';
   }
 
   Future<void> _confirmDeleteAccount() async {
@@ -295,7 +295,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               child: ListTile(
                 leading: const Icon(Icons.password, color: Color(0xFF4CAF50)),
                 title: const Text('Change password'),
-                subtitle: const Text('Update the password you use to sign in.'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: _changePassword,
               ),
@@ -310,8 +309,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             child: ListTile(
               leading: const Icon(Icons.delete_forever, color: Colors.red),
               title: const Text('Delete account'),
-              subtitle: const Text(
-                  'Permanently delete your account and relevant baby data.'),
+              subtitle: const Text('This cannot be undone.'),
               trailing: _deletingAccount
                   ? const SizedBox(
                       width: 20,

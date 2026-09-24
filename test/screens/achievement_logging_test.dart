@@ -85,10 +85,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Soft/Mushy'));
       await tester.tap(find.text('Soft/Mushy'));
-      await tester.ensureVisible(find.text('Save Entry 💾'));
+      await tester.ensureVisible(find.text('Save'));
       service.saveGate = Completer<void>();
       service.failClaims = outcome == 'celebration failure';
-      await tester.tap(find.text('Save Entry 💾'));
+      await tester.tap(find.text('Save'));
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('New achievement!'), findsNothing);
       if (outcome == 'save failure') {
@@ -106,7 +106,7 @@ void main() {
         await tester.pumpAndSettle();
       }
       if (outcome != 'save failure') {
-        expect(find.text('💩 Poop logged successfully!'), findsOneWidget);
+        expect(find.text('Saved'), findsOneWidget);
       }
     });
   }

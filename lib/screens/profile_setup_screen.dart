@@ -71,7 +71,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Your name will appear on poop logs you add.',
+                    'Shown on your entries.',
                     style: TextStyle(color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),

@@ -114,7 +114,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   Future<void> _save() async {
     if (_selectedConsistency == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a consistency type')),
+        const SnackBar(content: Text('Choose a consistency')),
       );
       return;
     }
@@ -189,9 +189,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isEditing
-              ? '💩 Poop entry updated!'
-              : '💩 Poop logged successfully!'),
+          content: Text(_isEditing ? 'Updated' : 'Saved'),
           backgroundColor: const Color(0xFF4CAF50),
         ),
       );
@@ -212,7 +210,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Poop Log 💩' : 'Log a Poop 💩'),
+        title: Text(_isEditing ? 'Edit log' : 'Log a poop'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -227,7 +225,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'When did it happen?',
+                      'Date and time',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -294,7 +292,6 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
               maxLines: 3,
               decoration: const InputDecoration(
                 labelText: 'Notes (optional)',
-                hintText: 'Any observations...',
                 prefixIcon: Icon(Icons.notes),
                 alignLabelWithHint: true,
               ),
@@ -315,7 +312,7 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : Text(_isEditing ? 'Save Changes 💾' : 'Save Entry 💾'),
+                    : const Text('Save'),
               ),
             ),
           ],
