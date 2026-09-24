@@ -9,6 +9,7 @@ import '../services/firestore_service.dart';
 import '../widgets/calendar_widget.dart';
 import '../widgets/poop_entry_tile.dart';
 import '../widgets/app_status.dart';
+import '../widgets/diary_title.dart';
 import 'log_poop_screen.dart';
 import 'profile_setup_screen.dart';
 import 'account_settings_screen.dart';
@@ -105,9 +106,19 @@ class _HomeScreenState extends State<HomeScreen> {
               (candidate) => candidate.id == _selectedBabyId,
               orElse: () => babies.first,
             );
+            final diaryTitle = DiaryTitle(
+              baby: baby,
+              babies: babies,
+              onSelected: (babyId) => setState(() {
+                _selectedBabyId = babyId;
+                _entriesStream = null;
+                _cachedBabyId = null;
+              }),
+            );
             final entriesStream = _getEntriesStream(firestore, baby.id);
 
             return StreamBuilder<List<PoopEntry>>(
+              key: ValueKey(baby.id),
               stream: entriesStream,
               builder: (context, entrySnap) {
                 if (entrySnap.connectionState == ConnectionState.waiting &&
@@ -115,7 +126,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Scaffold(
                     appBar: AppBar(
                         automaticallyImplyLeading: false,
-                        title: Text('${baby.name}\'s diary')),
+                        centerTitle: true,
+                        titleSpacing: 0,
+                        leadingWidth: 48,
+                        leading: const SizedBox(width: 48),
+                        title: diaryTitle,
+                        actions: const [SizedBox(width: 48)]),
                     body: const AppLoadingView(
                         message: 'Loading poop entries...'),
                   );
@@ -125,7 +141,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Scaffold(
                     appBar: AppBar(
                         automaticallyImplyLeading: false,
-                        title: Text('${baby.name}\'s diary')),
+                        centerTitle: true,
+                        titleSpacing: 0,
+                        leadingWidth: 48,
+                        leading: const SizedBox(width: 48),
+                        title: diaryTitle,
+                        actions: const [SizedBox(width: 48)]),
                     body: AppErrorView(
                       message: friendlyError(entrySnap.error!),
                       onRetry: () => setState(() {
@@ -146,36 +167,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Scaffold(
                   appBar: AppBar(
                     automaticallyImplyLeading: false,
-                    title: Text('${baby.name}\'s diary'),
+                    centerTitle: true,
+                    titleSpacing: 0,
+                    leadingWidth: 48,
+                    leading: const SizedBox(width: 48),
+                    title: diaryTitle,
                     actions: [
-                      PopupMenuButton<String>(
-                        tooltip: 'Switch baby',
-                        icon: const Icon(Icons.switch_account),
-                        onSelected: (babyId) => setState(() {
-                          _selectedBabyId = babyId;
-                          _entriesStream = null;
-                          _cachedBabyId = null;
-                        }),
-                        itemBuilder: (_) => babies
-                            .map(
-                              (candidate) => PopupMenuItem(
-                                value: candidate.id,
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      candidate.id == baby.id
-                                          ? Icons.check
-                                          : Icons.child_care,
-                                      color: const Color(0xFF4CAF50),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(candidate.name),
-                                  ],
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
                       PopupMenuButton<String>(
                         onSelected: (val) async {
                           if (val == 'baby') {
