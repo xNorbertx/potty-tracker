@@ -12,9 +12,10 @@ void main() {
       find.byWidgetPredicate((w) => w is IconButton && w.tooltip == tooltip);
   final today = DateUtils.dateOnly(DateTime.now());
 
-  Widget calendar({DateTime? initial, double scale = 1}) {
+  Widget calendar(
+      {DateTime? initial, DateTime? selectedDay, double scale = 1}) {
     var focused = initial ?? today;
-    var selected = focused;
+    var selected = selectedDay ?? focused;
     return MaterialApp(
         home: Scaffold(
             body: StatefulBuilder(
@@ -36,10 +37,13 @@ void main() {
     )));
   }
 
+  TextButton todayButton(WidgetTester tester) => tester.widget<TextButton>(
+      find.ancestor(of: find.text('Today'), matching: find.byType(TextButton)));
+
   testWidgets('jump to a month in an older year, then return to today',
       (tester) async {
     await tester.pumpWidget(calendar());
-    expect(find.text('Today'), findsNothing);
+    expect(todayButton(tester).onPressed, isNull);
     await tester.tap(find.text(DateFormat.yMMMM().format(today)));
     await tester.pumpAndSettle();
     await tester.tap(button('Previous year'));
@@ -59,7 +63,7 @@ void main() {
         find.byType(TableCalendar<PoopEntry>));
     expect(isSameDay(table.focusedDay, today), isTrue);
     expect(table.selectedDayPredicate!(today), isTrue);
-    expect(find.text('Today'), findsNothing);
+    expect(todayButton(tester).onPressed, isNull);
   });
 
   testWidgets(
@@ -131,7 +135,33 @@ void main() {
     final table = tester.widget<TableCalendar<PoopEntry>>(
         find.byType(TableCalendar<PoopEntry>));
     expect(table.selectedDayPredicate!(today), isTrue);
-    expect(find.text('Today'), findsNothing);
+    expect(todayButton(tester).onPressed, isNull);
+  });
+
+  testWidgets('Today never moves the heading or calendar on a narrow phone',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(calendar(
+        selectedDay: today.subtract(const Duration(days: 1)), scale: 2));
+    final heading = find.text(DateFormat.yMMMM().format(today));
+    final grid = find.byType(TableCalendar<PoopEntry>);
+    final headingBefore = tester.getRect(heading);
+    final gridBefore = tester.getRect(grid);
+    final cardBefore = tester.getRect(find.byType(Card));
+    final todayBefore = tester.getRect(find.text('Today'));
+    expect(todayButton(tester).onPressed, isNotNull);
+    expect(find.byIcon(Icons.expand_more), findsNothing);
+    await tester.tap(find.text('Today'));
+    await tester.pumpAndSettle();
+    expect(todayButton(tester).onPressed, isNull);
+    expect(tester.getRect(heading), headingBefore);
+    expect(tester.getRect(grid), gridBefore);
+    expect(tester.getRect(find.byType(Card)), cardBefore);
+    expect(tester.getRect(find.text('Today')), todayBefore);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('earliest year is bounded and picker fits narrow enlarged text',

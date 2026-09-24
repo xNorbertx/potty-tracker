@@ -118,9 +118,6 @@ class AchievementBadge extends StatelessWidget {
                             fontWeight: FontWeight.bold)),
                   )),
           ]),
-          Text('$days days',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
         ]),
       ),
     );
