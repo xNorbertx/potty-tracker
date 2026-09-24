@@ -8,8 +8,74 @@ import 'package:potty_tracker/screens/home_screen.dart';
 import 'package:potty_tracker/screens/login_screen.dart';
 import 'package:potty_tracker/services/auth_service.dart';
 import 'package:potty_tracker/services/firestore_service.dart';
+import 'package:potty_tracker/models/consistency.dart';
+import 'package:potty_tracker/widgets/diary_title.dart';
 
 void main() {
+  testWidgets('centered diary title switches babies while preserving the day',
+      (tester) async {
+    tester.view.physicalSize = const Size(480, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final diary = FirestoreService(db: FakeFirebaseFirestore());
+    await diary.saveCaregiverProfile(const CaregiverProfile(
+        uid: 'caregiver', name: 'Sam', email: 'sam@example.com'));
+    final first = await diary.addBaby('caregiver', 'Ada');
+    final second =
+        await diary.addBaby('caregiver', 'Alexander Sebastian Montgomery');
+    for (final baby in [first, second]) {
+      await diary.addEntry(
+          uid: 'caregiver',
+          babyId: baby.id,
+          timestamp: DateTime.now(),
+          consistency: Consistency.soft,
+          notes: baby.id == first.id ? 'First diary' : 'Second diary');
+    }
+    await tester.pumpWidget(MultiProvider(
+      providers: [
+        Provider<AuthService>.value(
+            value: AuthService(
+                auth: MockFirebaseAuth(
+                    signedIn: true, mockUser: MockUser(uid: 'caregiver')))),
+        Provider<FirestoreService>.value(value: diary),
+      ],
+      child: const MaterialApp(home: HomeScreen()),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.switch_account), findsNothing);
+    final title = tester.widget<DiaryTitle>(find.byType(DiaryTitle));
+    final initialNote =
+        title.baby.id == first.id ? 'First diary' : 'Second diary';
+    final otherNote =
+        title.baby.id == first.id ? 'Second diary' : 'First diary';
+    expect(find.text(initialNote), findsOneWidget);
+    final other = title.baby.id == first.id ? second : first;
+    expect(tester.getCenter(find.byType(DiaryTitle)).dx, 240);
+    await tester.tap(find.byType(DiaryTitle));
+    await tester.pumpAndSettle();
+    final popup = tester.getRect(find.descendant(
+        of: find.byType(Dialog), matching: find.byType(Material)));
+    expect(popup.center, const Offset(240, 422));
+    await tester.tap(find.text(other.name));
+    await tester.pumpAndSettle();
+    expect(find.text("${other.name}'s diary"), findsOneWidget);
+    expect(find.text(otherNote), findsOneWidget);
+    expect(find.text(initialNote), findsNothing);
+    expect(tester.getCenter(find.byType(DiaryTitle)).dx, 240);
+    await tester.tap(find.byType(DiaryTitle));
+    await tester.pumpAndSettle();
+    expect(
+        tester.getRect(find.descendant(
+            of: find.byType(Dialog), matching: find.byType(Material))),
+        popup);
+    // Dismissing the picker leaves the current diary selected.
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+    expect(find.text("${other.name}'s diary"), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('sign-in clears stale routes and the diary has no back button',
       (tester) async {
     final diary = FirestoreService(db: FakeFirebaseFirestore());
@@ -45,6 +111,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text("Ada's diary"), findsOneWidget);
     expect(find.byType(BackButton), findsNothing);
+    await tester.tap(find.text("Ada's diary"));
+    await tester.pumpAndSettle();
+    expect(find.byType(BabyDiaryPicker), findsNothing);
     expect(navigator.currentState!.canPop(), isFalse);
     expect(await navigator.currentState!.maybePop(), isFalse);
     await tester.pumpAndSettle();

@@ -27,6 +27,7 @@ Future<void> main() async {
   await diary.saveCaregiverProfile(const CaregiverProfile(
       uid: 'preview', name: 'Sam', email: 'sam@example.com'));
   final baby = await diary.addBaby('preview', 'Ada');
+  await diary.addBaby('preview', 'Alexander Sebastian Montgomery');
   final now = DateTime.now();
   for (var daysAgo = 0; daysAgo < 14; daysAgo++) {
     await diary.addEntry(
