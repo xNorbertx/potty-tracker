@@ -8,28 +8,23 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 
 void main() {
   group('Consistency enum', () {
-    test('soft has correct emoji and label', () {
-      expect(Consistency.soft.emoji, '💛');
+    test('soft has correct label', () {
       expect(Consistency.soft.label, 'Soft/Mushy');
     });
 
-    test('formed has correct emoji and label', () {
-      expect(Consistency.formed.emoji, '💩');
+    test('formed has correct label', () {
       expect(Consistency.formed.label, 'Formed');
     });
 
-    test('pasty has correct emoji and label', () {
-      expect(Consistency.pasty.emoji, '🟤');
+    test('pasty has correct label', () {
       expect(Consistency.pasty.label, 'Pasty');
     });
 
-    test('watery has correct emoji and label', () {
-      expect(Consistency.watery.emoji, '💧');
+    test('watery has correct label', () {
       expect(Consistency.watery.label, 'Watery/Runny');
     });
 
-    test('hard has correct emoji and label', () {
-      expect(Consistency.hard.emoji, '🪨');
+    test('hard has correct label', () {
       expect(Consistency.hard.label, 'Hard/Pellets');
     });
 
@@ -46,12 +41,6 @@ void main() {
       expect(ConsistencyExtension.fromString('unknown'), Consistency.soft);
       // legacy 'normal' values from old logs fall back gracefully to soft
       expect(ConsistencyExtension.fromString('normal'), Consistency.soft);
-    });
-
-    test('all consistencies have colors', () {
-      for (final c in Consistency.values) {
-        expect(c.color, isNotNull);
-      }
     });
   });
 

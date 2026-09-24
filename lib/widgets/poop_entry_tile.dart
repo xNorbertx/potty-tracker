@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/poop_entry.dart';
 import '../models/consistency.dart';
 import '../models/poop_size.dart';
+import 'consistency_illustration.dart';
 
 class PoopEntryTile extends StatelessWidget {
   final PoopEntry entry;
@@ -50,13 +51,13 @@ class PoopEntryTile extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: entry.consistency.color.withValues(alpha: 0.12),
+              color: const Color(0xFFF8F1E8),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Text(
-                entry.consistency.emoji,
-                style: const TextStyle(fontSize: 24),
+              child: ConsistencyIllustration(
+                consistency: entry.consistency,
+                size: 44,
               ),
             ),
           ),
