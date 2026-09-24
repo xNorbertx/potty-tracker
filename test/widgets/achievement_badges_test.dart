@@ -19,7 +19,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('×2'), findsOneWidget);
     expect(find.text('×1'), findsOneWidget);
-    expect(find.text('Not yet earned'), findsOneWidget);
+    expect(find.text('Achievements'), findsOneWidget);
+    expect(find.text('Streaks'), findsOneWidget);
     expect(find.byType(Image), findsNWidgets(3));
   });
 

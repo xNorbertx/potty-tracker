@@ -80,7 +80,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-                'Give this code to the caregiver you want to invite to ${currentBaby.name}\'s diary.'),
+                'Share this code to invite someone to ${currentBaby.name}\'s diary.'),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -132,10 +132,8 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Export diary summary',
+              const Text('Export diary PDF',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text('Choose the period to include in the PDF.'),
               const SizedBox(height: 12),
               ...DiaryExportPeriod.values.map(
                 (value) => ListTile(
@@ -304,7 +302,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                   ),
                   const SizedBox(height: 28),
                   const Text(
-                    'Diary at a glance',
+                    'Overview',
                     style: TextStyle(
                       color: Color(0xFF388E3C),
                       fontWeight: FontWeight.bold,

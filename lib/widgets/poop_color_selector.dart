@@ -17,7 +17,6 @@ class PoopColorSelector extends StatelessWidget {
         labelText: 'Colour (optional)',
         prefixIcon: Icon(Icons.palette_outlined),
       ),
-      hint: const Text('Select colour from baby poo guide'),
       items: PoopColor.values
           .map(
             (color) => DropdownMenuItem<PoopColor>(

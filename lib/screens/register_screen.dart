@@ -40,7 +40,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyError(error)), backgroundColor: Colors.red.shade400),
+        SnackBar(
+            content: Text(friendlyError(error)),
+            backgroundColor: Colors.red.shade400),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -64,15 +66,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       children: [
                         const Text('💩', style: TextStyle(fontSize: 52)),
                         const SizedBox(height: 12),
-                        const Text('Welcome to Potty Tracker', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        const Text('Create an account to start a diary.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
                         const SizedBox(height: 24),
                         TextFormField(
                           controller: _email,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
-                          validator: (value) => value == null || !value.contains('@') ? 'Enter a valid email address' : null,
+                          decoration: const InputDecoration(
+                              labelText: 'Email',
+                              prefixIcon: Icon(Icons.email_outlined)),
+                          validator: (value) =>
+                              value == null || !value.contains('@')
+                                  ? 'Enter a valid email address'
+                                  : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -82,18 +86,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             labelText: 'Password',
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              icon: Icon(_obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined),
+                              onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword),
                             ),
                           ),
-                          validator: (value) => value == null || value.length < 6 ? 'Use at least 6 characters' : null,
+                          validator: (value) =>
+                              value == null || value.length < 6
+                                  ? 'Use at least 6 characters'
+                                  : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _confirmation,
                           obscureText: _obscurePassword,
-                          decoration: const InputDecoration(labelText: 'Confirm password', prefixIcon: Icon(Icons.lock_outline)),
-                          validator: (value) => value != _password.text ? 'Passwords do not match' : null,
+                          decoration: const InputDecoration(
+                              labelText: 'Confirm password',
+                              prefixIcon: Icon(Icons.lock_outline)),
+                          validator: (value) => value != _password.text
+                              ? 'Passwords do not match'
+                              : null,
                         ),
                         const SizedBox(height: 24),
                         SizedBox(
@@ -101,7 +115,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: ElevatedButton(
                             onPressed: _submitting ? null : _register,
                             child: _submitting
-                                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2))
                                 : const Text('Create account'),
                           ),
                         ),

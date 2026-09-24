@@ -33,10 +33,10 @@ void main() {
       home: LogPoopScreen(baby: baby, entry: entry),
     ));
 
-    expect(find.text('Edit Poop Log 💩'), findsOneWidget);
+    expect(find.text('Edit log'), findsOneWidget);
     expect(find.text('Jun 15, 2024'), findsOneWidget);
     expect(find.text('09:05'), findsOneWidget);
     expect(find.text('After breakfast'), findsOneWidget);
-    expect(find.text('Save Changes 💾'), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
   });
 }

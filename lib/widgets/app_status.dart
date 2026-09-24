@@ -69,7 +69,7 @@ class ConnectionStatusBanner extends StatelessWidget {
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            "You're offline. Changes will sync when you're back online.",
+                            "You're offline.",
                             style: TextStyle(
                                 fontSize: 13, fontWeight: FontWeight.w600),
                           ),

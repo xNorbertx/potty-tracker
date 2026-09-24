@@ -65,50 +65,55 @@ class PoopEntryTile extends StatelessWidget {
             entry.consistency.label,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                entry.size != null
-                    ? '${entry.size!.emoji} ${entry.size!.label}'
-                    : 'No size selected',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: entry.size != null ? Colors.black87 : Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: entry.color?.swatch ?? Colors.grey.shade300,
-                      shape: BoxShape.circle,
-                      border:
-                          Border.all(color: Colors.grey.shade400, width: 0.5),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      entry.color?.label ?? 'No color selected',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color:
-                            entry.color != null ? Colors.black87 : Colors.grey,
+          subtitle: entry.size == null &&
+                  entry.color == null &&
+                  (entry.notes == null || entry.notes!.isEmpty)
+              ? null
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (entry.size != null)
+                      Text(
+                        '${entry.size!.emoji} ${entry.size!.label}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black87,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-              if (entry.notes != null && entry.notes!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(entry.notes!),
-              ],
-            ],
-          ),
+                    if (entry.color != null) ...[
+                      if (entry.size != null) const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: entry.color!.swatch,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: Colors.grey.shade400, width: 0.5),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              entry.color!.label,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (entry.notes != null && entry.notes!.isNotEmpty) ...[
+                      if (entry.size != null || entry.color != null)
+                        const SizedBox(height: 4),
+                      Text(entry.notes!),
+                    ],
+                  ],
+                ),
           trailing: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,

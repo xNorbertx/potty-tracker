@@ -112,8 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (entrySnap.connectionState == ConnectionState.waiting &&
                     entrySnap.data == null) {
                   return Scaffold(
-                    appBar:
-                        AppBar(title: Text('👶 ${baby.name}\'s Poop Diary 💩')),
+                    appBar: AppBar(title: Text('${baby.name}\'s diary')),
                     body: const AppLoadingView(
                         message: 'Loading poop entries...'),
                   );
@@ -121,8 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 if (entrySnap.hasError && entrySnap.data == null) {
                   return Scaffold(
-                    appBar:
-                        AppBar(title: Text('👶 ${baby.name}\'s Poop Diary 💩')),
+                    appBar: AppBar(title: Text('${baby.name}\'s diary')),
                     body: AppErrorView(
                       message: friendlyError(entrySnap.error!),
                       onRetry: () => setState(() {
@@ -142,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 return Scaffold(
                   appBar: AppBar(
-                    title: Text('👶 ${baby.name}\'s Poop Diary 💩'),
+                    title: Text('${baby.name}\'s diary'),
                     actions: [
                       PopupMenuButton<String>(
                         tooltip: 'Switch baby',
@@ -269,12 +267,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   'No entries for this day',
                                   style: TextStyle(color: Colors.grey),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Tap 💩 to log one!',
-                                  style: TextStyle(
-                                      color: Colors.grey, fontSize: 13),
                                 ),
                               ],
                             ),
@@ -473,8 +465,8 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
                 if (baby == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content:
-                          const Text('This invite code is unavailable. Ask a verified caregiver for a new one.'),
+                      content: const Text(
+                          'Invite code unavailable. Ask for a new one.'),
                       backgroundColor: Colors.red.shade400,
                     ),
                   );
@@ -561,12 +553,6 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
                   'No babies yet',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Add a baby to start their poop diary.',
-                  style: TextStyle(color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: _addingBaby ? null : _showAddBabyDialog,
@@ -582,7 +568,7 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: _addingBaby ? null : _showJoinBabyDialog,
-                  child: const Text('Have an invite code? Join a shared baby'),
+                  child: const Text('Join with invite code'),
                 ),
               ],
             ),
