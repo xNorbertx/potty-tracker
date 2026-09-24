@@ -109,6 +109,16 @@ the **merged release manifest**, not just source, for transitive permissions.
 The Android CI artifact `android-permission-audit` contains the built APK's
 permissions and badging. Repeat this check after dependency changes.
 
+The release-mode PR build at commit `da2ff6f` was inspected on 24 September 2026
+(CI run 36055891578). Its merged manifest requests INTERNET, ACCESS_NETWORK_STATE,
+WAKE_LOCK, com.google.android.c2dm.permission.RECEIVE,
+com.google.android.providers.gsf.permission.READ_GSERVICES, and the app's own
+DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION. The exact output is retained in
+`store/android-permissions.txt`. The Google messaging/service permissions are
+transitive SDK permissions, despite the absence of an app notification feature;
+include this evidence in the Firebase identifier/token review. No dangerous
+runtime permission or advertising-ID permission appears in that manifest.
+
 Before Play submission, verify actual Google and Microsoft sign-in on a signed
 Android build, including Play signing fingerprints, and verify deletion with a
 dedicated synthetic account. Do not test deletion against a real family diary.
