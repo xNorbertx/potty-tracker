@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - firestore.rules
+      - firestore.indexes.json
+      - firestore-tests/**
+      - functions/**
       - firebase.json
       - .firebaserc
       - .github/workflows/firestore-rules.yml
@@ -12,6 +15,9 @@ on:
     branches: [main]
     paths:
       - firestore.rules
+      - firestore.indexes.json
+      - firestore-tests/**
+      - functions/**
       - firebase.json
       - .firebaserc
       - .github/workflows/firestore-rules.yml
@@ -44,12 +50,14 @@ jobs:
       - name: Install Firestore permission-test dependencies
         run: npm ci
         working-directory: firestore-tests
-      - name: Run Firestore permission tests in the emulator
+      - run: npm ci
+        working-directory: functions
+      - name: Run Firestore permission and account deletion tests in the emulator
         run: >-
           npx --yes firebase-tools@15.30.1 emulators:exec
           --only firestore
           --project demo-potty-tracker
-          "npm --prefix firestore-tests test"
+          "npm --prefix firestore-tests test && npm --prefix functions test"
 
   deploy:
     name: Deploy Firestore rules
@@ -73,4 +81,4 @@ jobs:
             exit 1
           fi
           printf '%s' "$FIREBASE_RULES_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          npx --yes firebase-tools@15.30.1 deploy --only firestore:rules --project baby-poop-tracker --non-interactive
+          npx --yes firebase-tools@15.30.1 deploy --only firestore:rules,firestore:indexes --project baby-poop-tracker --non-interactive

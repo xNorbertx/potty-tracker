@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
 import '../widgets/app_status.dart';
+import '../widgets/privacy_policy_link.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -123,6 +124,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 : const Text('Create account'),
                           ),
                         ),
+                        const PrivacyPolicyLink(),
                       ],
                     ),
                   ),

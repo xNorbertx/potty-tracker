@@ -93,6 +93,18 @@ test('link preview is passive and redemption requires an explicit button press',
   assert.match(verificationPage, /history.replaceState/);
 });
 
+test('in-flight verification and invitations cannot recreate deleted account data', async () => {
+  const f = fixture();
+  await f.service.send('parent');
+  const token = f.token();
+  f.advance(60000);
+  f.records.set('deletion_blocks/parent', { expiresAt: 10000000 });
+  await assert.rejects(f.service.send('parent'), /account-deleted/);
+  await assert.rejects(f.service.complete('parent', token), /invalid-link/);
+  await assert.rejects(createInvitationService(f)('parent', 'baby'), /not-verified/);
+  assert.equal(f.records.has('verified_emails/parent'), false);
+});
+
 test('only members with app email proof can issue invites; legacy code is replaced', async () => {
   const f = fixture();
   f.records.set('babies/baby', { memberUids: ['parent'], shareCode: 'OLD123' });

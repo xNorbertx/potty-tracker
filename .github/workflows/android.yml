@@ -102,6 +102,15 @@ jobs:
           grep -F "package: name='com.xnorbertx.pottytracker' versionCode='$VERSION_CODE'" "$RUNNER_TEMP/apk-manifest.txt"
           grep -F "launchable-activity: name='com.xnorbertx.potty_tracker.MainActivity'" "$RUNNER_TEMP/apk-manifest.txt"
           grep -F "uses-permission: name='android.permission.INTERNET'" "$RUNNER_TEMP/apk-manifest.txt"
+          mkdir -p permission-audit
+          cp "$RUNNER_TEMP/apk-manifest.txt" permission-audit/badging.txt
+          "$tools/aapt" dump permissions "$apk" > permission-audit/permissions.txt
+      - name: Upload release permission audit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-permission-audit
+          path: permission-audit/
+          retention-days: 30
       - name: Package Android releases and checksums
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:

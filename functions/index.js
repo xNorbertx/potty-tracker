@@ -2,6 +2,7 @@ const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const { createVerificationService, verificationPage } = require('./verification');
 const { createInvitationService } = require('./invitations');
+const { createAccountDeletionService } = require('./account-deletion');
 
 admin.initializeApp();
 
@@ -117,9 +118,8 @@ exports.createCaregiverInvitation = functions.https.onCall(async (data, context)
   }
 });
 
-exports.deleteEmailVerification = functions.auth.user().onDelete(async (user) => {
-  const batch = admin.firestore().batch();
-  batch.delete(admin.firestore().collection('verification_requests').doc(user.uid));
-  batch.delete(admin.firestore().collection('verified_emails').doc(user.uid));
-  await batch.commit();
-});
+// Keep the existing deployed trigger name to avoid overlapping deletion workers.
+const deleteAccountData = createAccountDeletionService({ db: admin.firestore() });
+exports.deleteEmailVerification = functions
+  .runWith({ failurePolicy: true, timeoutSeconds: 540 })
+  .auth.user().onDelete((user) => deleteAccountData(user.uid));
