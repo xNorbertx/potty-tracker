@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_status.dart';
+import '../widgets/privacy_policy_link.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -176,6 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 36),
 
+                const PrivacyPolicyLink(),
                 // ── Google Sign-In Button ───────────────────────────────
                 SizedBox(
                   width: double.infinity,

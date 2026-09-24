@@ -6,6 +6,8 @@ on:
     paths:
       - functions/**
       - firebase.json
+      - firestore.indexes.json
+      - firestore.rules
       - .firebaserc
       - .github/workflows/welcome-email.yml
   push:
@@ -13,6 +15,8 @@ on:
     paths:
       - functions/**
       - firebase.json
+      - firestore.indexes.json
+      - firestore.rules
       - .firebaserc
       - .github/workflows/welcome-email.yml
   workflow_dispatch:
@@ -63,5 +67,6 @@ jobs:
           printf '%s' "$RESEND_APIKEY" > "$RUNNER_TEMP/resend-api-key"
           npx --yes firebase-tools@15.30.1 functions:secrets:set RESEND_API_KEY \
             --data-file "$RUNNER_TEMP/resend-api-key" --project baby-poop-tracker --non-interactive
+          npx --yes firebase-tools@15.30.1 deploy --only firestore:rules,firestore:indexes --project baby-poop-tracker --non-interactive
           npx --yes firebase-tools@15.30.1 deploy --only functions:sendWelcomeEmail,functions:resendVerificationEmail,functions:verifyCaregiverEmail,functions:createCaregiverInvitation,functions:deleteEmailVerification \
             --project baby-poop-tracker --non-interactive --force

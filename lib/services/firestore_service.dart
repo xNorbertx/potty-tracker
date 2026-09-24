@@ -165,29 +165,6 @@ class FirestoreService {
     });
   }
 
-  /// Removes [uid] from shared babies and deletes baby data that has no other
-  /// member. This must run before deleting the Firebase Authentication user.
-  Future<void> removeAccountData({
-    required String uid,
-    required List<Baby> babies,
-  }) async {
-    for (final baby in babies) {
-      final otherMembers = baby.memberUids.where((id) => id != uid).toList();
-      if (otherMembers.isNotEmpty) {
-        final updates = <String, dynamic>{
-          'memberUids': otherMembers,
-          'memberLabels.$uid': FieldValue.delete(),
-        };
-        if (baby.memberEmails.containsKey(uid)) {
-          updates['memberEmails.$uid'] = FieldValue.delete();
-        }
-        await _babiesRef.doc(baby.id).update(updates);
-      } else {
-        await deleteBaby(baby);
-      }
-    }
-  }
-
   /// Removes the signed-in caregiver from a shared diary without affecting the
   /// remaining caregivers or the diary's entries.
   Future<void> leaveBaby({required Baby baby, required String uid}) async {

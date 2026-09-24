@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
 import '../widgets/email_verification_card.dart';
+import '../widgets/privacy_policy_link.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   final List<Baby> babies;
@@ -229,10 +230,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
     setState(() => _deletingAccount = true);
     try {
-      await context.read<FirestoreService>().removeAccountData(
-            uid: uid,
-            babies: widget.babies,
-          );
+      // Firebase checks recent authentication before deleting the account.
+      // Its server trigger then cleans up data even if this device disconnects.
       await auth.deleteCurrentUser();
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
@@ -299,6 +298,15 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 onTap: _changePassword,
               ),
             ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined,
+                  color: Color(0xFF4CAF50)),
+              title: const Text('Privacy policy'),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () => openPrivacyPolicy(context),
+            ),
+          ),
           const SizedBox(height: 28),
           const Text(
             'Danger zone',

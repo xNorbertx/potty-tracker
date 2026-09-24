@@ -157,6 +157,19 @@ test('an invite cannot be used without consuming and replacing its code', async 
   );
 });
 
+test('a deleted account cannot reuse an unexpired token or recreate its profile', async () => {
+  await seedDiary();
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'deletion_blocks', 'caregiver-a'), {
+      expiresAt: new Date(Date.now() + 7200000),
+    });
+  });
+  const db = testEnv.authenticatedContext('caregiver-a').firestore();
+  await assertFails(getDoc(doc(db, 'babies', babyId)));
+  await assertFails(setDoc(doc(db, 'caregiver_profiles', 'caregiver-a'), { name: 'Back' }));
+  await assertFails(setDoc(doc(db, 'deletion_blocks', 'caregiver-a'), {}));
+});
+
 function joinBatch(db) {
   const batch = writeBatch(db);
   batch.update(doc(db, 'babies', babyId), {
