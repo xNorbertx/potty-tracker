@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../models/poop_entry.dart';
+import 'calendar_month_picker.dart';
 
 class CalendarWidget extends StatelessWidget {
   final List<PoopEntry> entries;
@@ -25,87 +26,147 @@ class CalendarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final month = DateTime(focusedDay.year, focusedDay.month);
+    final currentMonth = DateTime(today.year, today.month);
+    final firstMonth = DateTime(2020);
+    final showToday = !isSameDay(selectedDay, today) || month != currentMonth;
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: TableCalendar<PoopEntry>(
-          firstDay: DateTime.utc(2020),
-          lastDay: DateTime.now(),
-          focusedDay: focusedDay,
-          selectedDayPredicate: (day) => isSameDay(selectedDay, day),
-          eventLoader: _getEntriesForDay,
-          onDaySelected: (selected, focused) => onDaySelected(selected),
-          onPageChanged: onPageChanged,
-          calendarFormat: CalendarFormat.month,
-          availableCalendarFormats: const {CalendarFormat.month: 'Month'},
-          rowHeight: 60,
-          daysOfWeekHeight: 28,
-          calendarStyle: CalendarStyle(
-            outsideDaysVisible: false,
-            markersMaxCount: 6,
-            defaultDecoration: const BoxDecoration(shape: BoxShape.circle),
-            weekendDecoration: const BoxDecoration(shape: BoxShape.circle),
-            selectedDecoration: const BoxDecoration(shape: BoxShape.circle),
-            todayDecoration: const BoxDecoration(shape: BoxShape.circle),
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(children: [
+              IconButton(
+                tooltip: 'Previous month',
+                onPressed: month.isAfter(firstMonth)
+                    ? () => onPageChanged(DateTime(month.year, month.month - 1))
+                    : null,
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () async {
+                        final picked = await showDialog<DateTime>(
+                          context: context,
+                          builder: (_) => CalendarMonthPicker(
+                            focusedMonth: month,
+                            firstMonth: firstMonth,
+                            lastMonth: currentMonth,
+                          ),
+                        );
+                        if (picked != null && context.mounted) {
+                          onPageChanged(picked);
+                        }
+                      },
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Flexible(
+                            child: Text(
+                          DateFormat.yMMMM().format(month),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w600),
+                        )),
+                        const Icon(Icons.expand_more, size: 18),
+                      ]),
+                    ),
+                    if (showToday)
+                      TextButton(
+                        onPressed: () {
+                          onPageChanged(today);
+                          onDaySelected(today);
+                        },
+                        child: const Text('Today'),
+                      ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Next month',
+                onPressed: month.isBefore(currentMonth)
+                    ? () => onPageChanged(DateTime(month.year, month.month + 1))
+                    : null,
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ]),
           ),
-          headerStyle: const HeaderStyle(
-            formatButtonVisible: false,
-            titleCentered: true,
-            titleTextStyle: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
+          TableCalendar<PoopEntry>(
+            firstDay: DateTime.utc(2020),
+            lastDay: today,
+            focusedDay: focusedDay,
+            headerVisible: false,
+            selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+            eventLoader: _getEntriesForDay,
+            onDaySelected: (selected, focused) => onDaySelected(selected),
+            onPageChanged: onPageChanged,
+            calendarFormat: CalendarFormat.month,
+            availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+            rowHeight: 60,
+            daysOfWeekHeight: 28,
+            calendarStyle: const CalendarStyle(
+              outsideDaysVisible: false,
+              markersMaxCount: 6,
+              defaultDecoration: BoxDecoration(shape: BoxShape.circle),
+              weekendDecoration: BoxDecoration(shape: BoxShape.circle),
+              selectedDecoration: BoxDecoration(shape: BoxShape.circle),
+              todayDecoration: BoxDecoration(shape: BoxShape.circle),
+            ),
+            daysOfWeekStyle: DaysOfWeekStyle(
+              weekdayStyle: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
+              ),
+              weekendStyle: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade400,
+              ),
+            ),
+            calendarBuilders: CalendarBuilders(
+              // Markers are drawn inside _DayCell so they remain visible when
+              // the cell is selected. Suppress TableCalendar's default markers.
+              markerBuilder: (_, __, ___) => const SizedBox.shrink(),
+              defaultBuilder: (ctx, day, focused) => _DayCell(
+                day: day,
+                isSelected: false,
+                isToday: false,
+                isWeekend: day.weekday >= 6,
+                entryCount: _getEntriesForDay(day).length,
+              ),
+              selectedBuilder: (ctx, day, focused) => _DayCell(
+                day: day,
+                isSelected: true,
+                isToday: isSameDay(day, DateTime.now()),
+                isWeekend: day.weekday >= 6,
+                entryCount: _getEntriesForDay(day).length,
+              ),
+              todayBuilder: (ctx, day, focused) => _DayCell(
+                day: day,
+                isSelected: isSameDay(selectedDay, day),
+                isToday: true,
+                isWeekend: day.weekday >= 6,
+                entryCount: _getEntriesForDay(day).length,
+              ),
+              outsideBuilder: (ctx, day, focused) => _DayCell(
+                day: day,
+                isSelected: false,
+                isToday: false,
+                isWeekend: day.weekday >= 6,
+                isOutside: true,
+                entryCount: _getEntriesForDay(day).length,
+              ),
             ),
           ),
-          daysOfWeekStyle: DaysOfWeekStyle(
-            weekdayStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-            weekendStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade400,
-            ),
-          ),
-          calendarBuilders: CalendarBuilders(
-            // Markers are drawn inside _DayCell so they remain visible when
-            // the cell is selected. Suppress TableCalendar's default markers.
-            markerBuilder: (_, __, ___) => const SizedBox.shrink(),
-            defaultBuilder: (ctx, day, focused) => _DayCell(
-              day: day,
-              isSelected: false,
-              isToday: false,
-              isWeekend: day.weekday >= 6,
-              entryCount: _getEntriesForDay(day).length,
-            ),
-            selectedBuilder: (ctx, day, focused) => _DayCell(
-              day: day,
-              isSelected: true,
-              isToday: isSameDay(day, DateTime.now()),
-              isWeekend: day.weekday >= 6,
-              entryCount: _getEntriesForDay(day).length,
-            ),
-            todayBuilder: (ctx, day, focused) => _DayCell(
-              day: day,
-              isSelected: isSameDay(selectedDay, day),
-              isToday: true,
-              isWeekend: day.weekday >= 6,
-              entryCount: _getEntriesForDay(day).length,
-            ),
-            outsideBuilder: (ctx, day, focused) => _DayCell(
-              day: day,
-              isSelected: false,
-              isToday: false,
-              isWeekend: day.weekday >= 6,
-              isOutside: true,
-              entryCount: _getEntriesForDay(day).length,
-            ),
-          ),
-        ),
+        ]),
       ),
     );
   }
@@ -164,13 +225,18 @@ class _DayCell extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              '${day.day}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: numberWeight,
-                color: numberColor,
-                height: 1.0,
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '${day.day}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: numberWeight,
+                    color: numberColor,
+                    height: 1.0,
+                  ),
+                ),
               ),
             ),
             if (entryCount > 0)
