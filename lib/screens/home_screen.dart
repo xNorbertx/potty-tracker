@@ -47,7 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (uid == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(context, '/login');
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
       });
       return const Scaffold(
         body: AppLoadingView(message: 'Checking your account...'),
@@ -112,7 +113,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (entrySnap.connectionState == ConnectionState.waiting &&
                     entrySnap.data == null) {
                   return Scaffold(
-                    appBar: AppBar(title: Text('${baby.name}\'s diary')),
+                    appBar: AppBar(
+                        automaticallyImplyLeading: false,
+                        title: Text('${baby.name}\'s diary')),
                     body: const AppLoadingView(
                         message: 'Loading poop entries...'),
                   );
@@ -120,7 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 if (entrySnap.hasError && entrySnap.data == null) {
                   return Scaffold(
-                    appBar: AppBar(title: Text('${baby.name}\'s diary')),
+                    appBar: AppBar(
+                        automaticallyImplyLeading: false,
+                        title: Text('${baby.name}\'s diary')),
                     body: AppErrorView(
                       message: friendlyError(entrySnap.error!),
                       onRetry: () => setState(() {
@@ -140,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 return Scaffold(
                   appBar: AppBar(
+                    automaticallyImplyLeading: false,
                     title: Text('${baby.name}\'s diary'),
                     actions: [
                       PopupMenuButton<String>(
@@ -200,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             final nav = Navigator.of(context);
                             await auth.signOut();
                             if (!mounted) return;
-                            nav.pushReplacementNamed('/login');
+                            nav.pushNamedAndRemoveUntil('/login', (_) => false);
                           }
                         },
                         itemBuilder: (_) => [
@@ -495,12 +501,13 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
     final navigator = Navigator.of(context);
     await widget.auth.signOut();
     if (!mounted) return;
-    navigator.pushReplacementNamed('/login');
+    navigator.pushNamedAndRemoveUntil('/login', (_) => false);
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: const Text('Potty Tracker'),
           actions: [
             PopupMenuButton<String>(

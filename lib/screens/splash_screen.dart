@@ -29,13 +29,13 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _checkAuth() {
+    if (!mounted) return;
     final auth = context.read<AuthService>();
     final user = auth.currentUser;
-    if (!mounted) return;
     if (user != null) {
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
     } else {
-      Navigator.pushReplacementNamed(context, '/login');
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
     }
   }
 

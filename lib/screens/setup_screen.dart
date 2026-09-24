@@ -36,7 +36,7 @@ class _SetupScreenState extends State<SetupScreen> {
         caregiverLabel: auth.currentUserEmail,
       );
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
