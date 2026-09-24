@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/consistency.dart';
+import 'consistency_illustration.dart';
 
 class ConsistencySelector extends StatelessWidget {
   final Consistency? selected;
@@ -53,45 +54,40 @@ class _ConsistencyCard extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected
-                ? consistency.color.withValues(alpha: 0.15)
-                : Colors.white,
+            color: isSelected ? const Color(0xFFE8F5E9) : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isSelected ? consistency.color : const Color(0xFFE0E0E0),
+              color: isSelected
+                  ? const Color(0xFF4CAF50)
+                  : const Color(0xFFE0E0E0),
               width: isSelected ? 2 : 1,
             ),
             boxShadow: isSelected
-                ? [
+                ? const [
                     BoxShadow(
-                      color: consistency.color.withValues(alpha: 0.2),
+                      color: Color(0x334CAF50),
                       blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      offset: Offset(0, 2),
                     ),
                   ]
                 : [],
           ),
           child: Row(
             children: [
-              Text(
-                consistency.emoji,
-                style: const TextStyle(fontSize: 28),
-              ),
+              ConsistencyIllustration(consistency: consistency),
               const SizedBox(width: 16),
-              Text(
+              Expanded(
+                  child: Text(
                 consistency.label,
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? consistency.color.withValues(alpha: 0.9)
-                      : Colors.black87,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? const Color(0xFF2E7D32) : Colors.black87,
                 ),
-              ),
-              const Spacer(),
+              )),
               if (isSelected)
-                Icon(Icons.check_circle, color: consistency.color, size: 22),
+                const Icon(Icons.check_circle,
+                    color: Color(0xFF4CAF50), size: 22),
             ],
           ),
         ),
