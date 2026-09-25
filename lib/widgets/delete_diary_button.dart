@@ -38,10 +38,7 @@ class DiarySupportLink extends StatelessWidget {
 
 class DeleteDiaryButton extends StatefulWidget {
   final Baby baby;
-  final bool compact;
-  final VoidCallback? onDeleted;
-  const DeleteDiaryButton(
-      {super.key, required this.baby, this.compact = false, this.onDeleted});
+  const DeleteDiaryButton({super.key, required this.baby});
   @override
   State<DeleteDiaryButton> createState() => _DeleteDiaryButtonState();
 }
@@ -121,7 +118,6 @@ class _DeleteDiaryButtonState extends State<DeleteDiaryButton> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Diary deletion started.')));
-      widget.onDeleted?.call();
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -135,16 +131,28 @@ class _DeleteDiaryButtonState extends State<DeleteDiaryButton> {
   @override
   Widget build(BuildContext context) {
     if (widget.baby.diaryDeletionRequested) return const SizedBox.shrink();
-    if (widget.compact) {
-      return IconButton(
-          tooltip: 'Delete diary',
-          onPressed: _busy ? null : _delete,
-          icon: const Icon(Icons.delete_outline));
-    }
-    return TextButton.icon(
-        onPressed: _busy ? null : _delete,
-        style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
-        icon: const Icon(Icons.delete_outline),
-        label: Text(_busy ? 'Please wait…' : 'Delete diary'));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('Danger zone',
+            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            title: const Text('Delete diary'),
+            subtitle: const Text('This deletes the diary for everyone.'),
+            trailing: _busy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.chevron_right),
+            onTap: _busy ? null : _delete,
+          ),
+        ),
+      ],
+    );
   }
 }

@@ -13,7 +13,10 @@ class Baby {
   final String? consentBy;
   final DateTime? consentAt;
   final bool diaryDeletionRequested;
-  bool get hasDiaryConsent => consentVersion == 1 && !diaryDeletionRequested;
+  // A pending server timestamp is null in Firestore's local snapshots. Wait
+  // for it to resolve before subscribing to entries protected by consent rules.
+  bool get hasDiaryConsent =>
+      consentVersion == 1 && consentAt != null && !diaryDeletionRequested;
 
   Baby({
     required this.id,

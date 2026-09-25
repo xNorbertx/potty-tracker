@@ -60,7 +60,9 @@ void main() {
       (tester) async {
     await show(tester, DeleteDiaryButton(baby: await shared()));
     await tester.tap(find.text('Delete diary'));
-    await tester.pumpAndSettle();
+    // The danger-zone progress indicator animates behind the open dialog.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Verify your email first'), findsOneWidget);
     expect(find.text('Resend verification email'), findsOneWidget);
     expect(find.text('Contact support'), findsOneWidget);
@@ -74,14 +76,18 @@ void main() {
     verification.verified = true;
     await show(tester, DeleteDiaryButton(baby: await shared()));
     await tester.tap(find.text('Delete diary'));
-    await tester.pumpAndSettle();
+    // The danger-zone progress indicator animates behind the open dialog.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text("Delete Emma's diary?"), findsOneWidget);
     expect(find.textContaining('other 2 caregivers'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(verification.deletions, 0);
     await tester.tap(find.text('Delete diary'));
-    await tester.pumpAndSettle();
+    // The danger-zone progress indicator animates behind the open dialog.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Delete for everyone'));
     await tester.pumpAndSettle();
     expect(verification.deletions, 1);
@@ -93,13 +99,17 @@ void main() {
     verification.fail = true;
     await show(tester, DeleteDiaryButton(baby: await shared()));
     await tester.tap(find.text('Delete diary'));
-    await tester.pumpAndSettle();
+    // The danger-zone progress indicator animates behind the open dialog.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Delete for everyone'));
     await tester.pumpAndSettle();
     expect(verification.deletions, 0);
     verification.fail = false;
     await tester.tap(find.text('Delete diary'));
-    await tester.pumpAndSettle();
+    // The danger-zone progress indicator animates behind the open dialog.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Delete for everyone'));
     await tester.pumpAndSettle();
     expect(verification.deletions, 1);

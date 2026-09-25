@@ -8,7 +8,6 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
 import '../widgets/diary_consent.dart';
-import '../widgets/delete_diary_button.dart';
 import 'baby_overview_screen.dart';
 
 class BabySettingsScreen extends StatefulWidget {
@@ -277,19 +276,7 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
                   child: ListTile(
                     leading: const CircleAvatar(child: Text('👶')),
                     title: Text(baby.name),
-                    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                      DeleteDiaryButton(
-                          baby: baby,
-                          compact: true,
-                          onDeleted: () {
-                            if (mounted) {
-                              setState(() => _babies = _babies
-                                  .where((b) => b.id != baby.id)
-                                  .toList());
-                            }
-                          }),
-                      const Icon(Icons.chevron_right),
-                    ]),
+                    trailing: const Icon(Icons.chevron_right),
                     onTap: () async {
                       final selectedBabyId =
                           await Navigator.of(context).push<String>(
