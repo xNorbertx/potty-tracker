@@ -73,7 +73,7 @@ class _EmailVerificationCardState extends State<EmailVerificationCard> {
                 ]),
                 if (!verified) ...[
                   const SizedBox(height: 8),
-                  const Text('Verify your email to invite caregivers.'),
+                  const Text('Verify your email to invite caregivers or delete diaries.'),
                   TextButton(
                       onPressed: _busy ? null : () => _run(true),
                       child: const Text('Resend verification email')),

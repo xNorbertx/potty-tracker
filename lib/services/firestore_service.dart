@@ -64,14 +64,18 @@ class FirestoreService {
       _profilesRef.doc(profile.uid).set(profile.toFirestore());
 
   Stream<List<Baby>> babiesStream(String uid) {
-    return _babiesRef
-        .where('memberUids', arrayContains: uid)
-        .snapshots()
-        .map((snap) => snap.docs.map(Baby.fromFirestore).toList());
+    return _babiesRef.where('memberUids', arrayContains: uid).snapshots().map(
+        (snap) => snap.docs
+            .map(Baby.fromFirestore)
+            .where((baby) => !baby.diaryDeletionRequested)
+            .toList());
   }
 
   Future<Baby> addBaby(String uid, String name,
-      {String? caregiverLabel}) async {
+      {String? caregiverLabel, required bool consentGiven}) async {
+    if (!consentGiven) {
+      throw StateError('Consent is required to create a diary.');
+    }
     final caregiver = await _caregiverDetails(uid, caregiverLabel);
     final id = _uuid.v4();
     final shareCode = _generateShareCode();
@@ -84,13 +88,24 @@ class FirestoreService {
       memberEmails: {uid: caregiver.email},
       shareCode: shareCode,
       createdAt: DateTime.now(),
+      consentVersion: 1,
+      consentBy: uid,
+      consentAt: DateTime.now(),
     );
     final batch = _db.batch();
-    batch.set(_babiesRef.doc(id), baby.toFirestore());
+    batch.set(_babiesRef.doc(id),
+        {...baby.toFirestore(), 'consentAt': FieldValue.serverTimestamp()});
     batch.set(_db.collection('share_codes').doc(shareCode), {'babyId': id});
     await batch.commit();
     return baby;
   }
+
+  Future<void> acceptDiaryConsent(String babyId, String uid) =>
+      _babiesRef.doc(babyId).update({
+        'consentVersion': 1,
+        'consentBy': uid,
+        'consentAt': FieldValue.serverTimestamp(),
+      });
 
   Future<void> updateBabyName(String babyId, String newName) async {
     await _babiesRef.doc(babyId).update({'name': newName});
@@ -150,6 +165,13 @@ class FirestoreService {
             (snapshot) => snapshot.exists ? Baby.fromFirestore(snapshot) : null,
           );
 
+  Future<Baby?> getBaby(String babyId) async {
+    final snapshot = await _babiesRef
+        .doc(babyId)
+        .get(const GetOptions(source: Source.server));
+    return snapshot.exists ? Baby.fromFirestore(snapshot) : null;
+  }
+
   Future<void> updateCaregiverDetails({
     required Baby baby,
     required String uid,
@@ -180,30 +202,6 @@ class FirestoreService {
       updates['memberEmails.$uid'] = FieldValue.delete();
     }
     await _babiesRef.doc(baby.id).update(updates);
-  }
-
-  Future<void> deleteBaby(Baby baby) async {
-    final entryDocs = await _entriesRef(baby.id).get();
-    final celebrationDocs = await _babiesRef
-        .doc(baby.id)
-        .collection('achievement_celebrations')
-        .get();
-    final operations = <DocumentReference<Map<String, dynamic>>>[
-      ...entryDocs.docs.map((doc) => doc.reference),
-      ...celebrationDocs.docs.map((doc) => doc.reference),
-      if (baby.shareCode.isNotEmpty)
-        _db.collection('share_codes').doc(baby.shareCode),
-      _babiesRef.doc(baby.id),
-    ];
-
-    // Firestore batches allow a maximum of 500 writes.
-    for (var start = 0; start < operations.length; start += 500) {
-      final batch = _db.batch();
-      for (final reference in operations.skip(start).take(500)) {
-        batch.delete(reference);
-      }
-      await batch.commit();
-    }
   }
 
   // ── Poop Entries ──────────────────────────────────────────────────────────

@@ -17,6 +17,8 @@ function createInvitationService({ db, auth }) {
         const baby = await tx.get(babyRef);
         const proof = await tx.get(db.collection('verified_emails').doc(uid));
         if (!baby.exists || !baby.data().memberUids.includes(uid)) throw new Error('not-member');
+        if (baby.data().diaryDeletionRequested) throw new Error('not-member');
+        if (baby.data().consentVersion !== 1) throw new Error('consent-required');
         if (proof.data()?.email !== user.email) throw new Error('not-verified');
         const previousCode = baby.data().shareCode;
         const previousRef = previousCode ? db.collection('share_codes').doc(previousCode) : null;

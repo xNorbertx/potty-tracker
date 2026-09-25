@@ -32,8 +32,8 @@ Future<void> main() async {
   final diary = FirestoreService(db: db);
   await diary.saveCaregiverProfile(const CaregiverProfile(
       uid: 'preview', name: 'Sam', email: 'sam@example.com'));
-  final created = await diary.addBaby('preview', 'Ada');
-  await diary.addBaby('preview', 'Milo');
+  final created = await diary.addBaby('preview', 'Ada', consentGiven: true);
+  await diary.addBaby('preview', 'Milo', consentGiven: true);
   await db.collection('babies').doc(created.id).update({
     'memberUids': ['preview', 'alex'],
     'memberLabels': {'preview': 'Sam', 'alex': 'Alex'},

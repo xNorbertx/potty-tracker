@@ -111,6 +111,9 @@ exports.createCaregiverInvitation = functions.https.onCall(async (data, context)
     if (error.message === 'not-verified') {
       throw new functions.https.HttpsError('failed-precondition', 'Verify your email in Account settings before inviting a caregiver.');
     }
+    if (error.message === 'consent-required') {
+      throw new functions.https.HttpsError('failed-precondition', 'Confirm permission to keep this diary before inviting caregivers.');
+    }
     if (error.message === 'not-member') {
       throw new functions.https.HttpsError('permission-denied', 'You are not a caregiver for this baby.');
     }
@@ -123,3 +126,29 @@ const deleteAccountData = createAccountDeletionService({ db: admin.firestore() }
 exports.deleteEmailVerification = functions
   .runWith({ failurePolicy: true, timeoutSeconds: 540 })
   .auth.user().onDelete((user) => deleteAccountData(user.uid));
+
+const { createDiaryDeletionService, deleteRequestedDiary } = require('./diary-deletion');
+const requestDiaryDeletion = createDiaryDeletionService({ db: admin.firestore(), auth: admin.auth() });
+exports.deleteCaregiverDiary = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Sign in first.');
+  try {
+    await requestDiaryDeletion(context.auth.uid, data?.babyId);
+    return { accepted: true };
+  } catch (error) {
+    if (error.message === 'not-verified') {
+      throw new functions.https.HttpsError('failed-precondition', 'Verify your email before deleting a diary.');
+    }
+    if (error.message === 'not-member') {
+      throw new functions.https.HttpsError('permission-denied', 'This diary is no longer available to you.');
+    }
+    if (error.message === 'invalid-baby') {
+      throw new functions.https.HttpsError('invalid-argument', 'Choose a diary.');
+    }
+    throw new functions.https.HttpsError('unavailable', 'Could not delete the diary. Please try again.');
+  }
+});
+
+exports.finishDiaryDeletion = functions
+  .runWith({ failurePolicy: true, timeoutSeconds: 540 })
+  .firestore.document('babies/{babyId}')
+  .onUpdate((change) => deleteRequestedDiary(admin.firestore(), change.after.ref));

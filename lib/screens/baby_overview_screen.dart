@@ -13,6 +13,8 @@ import '../services/verification_service.dart';
 import '../widgets/email_verification_card.dart';
 import '../widgets/achievement_badges.dart';
 import '../widgets/app_status.dart';
+import '../widgets/diary_consent.dart';
+import '../widgets/delete_diary_button.dart';
 
 class BabyOverviewScreen extends StatefulWidget {
   final Baby baby;
@@ -34,7 +36,10 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
       final uid = auth.currentUserId;
       final email = auth.currentUserEmail;
       if (uid == null || email == null) return;
-      _refreshCurrentCaregiver(uid, email);
+      _refreshCurrentCaregiver(uid, email).catchError((Object error) {
+        // Membership can disappear while this route is open. The diary stream
+        // handles that state; do not surface an unhandled background exception.
+      });
     });
   }
 
@@ -187,10 +192,20 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
       initialData: widget.baby,
       builder: (context, babySnapshot) {
         final currentBaby = babySnapshot.data;
-        if (currentBaby == null) {
-          return const Scaffold(
-            body: AppLoadingView(message: 'This baby is no longer available.'),
-          );
+        if (currentBaby == null ||
+            currentBaby.diaryDeletionRequested ||
+            !currentBaby.memberUids.contains(auth.currentUserId) ||
+            babySnapshot.hasError) {
+          return Scaffold(
+              appBar: AppBar(),
+              body: const Center(
+                  child: Text('This diary is no longer available.')));
+        }
+        if (!currentBaby.hasDiaryConsent) {
+          return Scaffold(
+              appBar: AppBar(title: Text(currentBaby.name)),
+              body: DiaryConsentPanel(
+                  key: ValueKey(currentBaby.id), baby: currentBaby));
         }
         return StreamBuilder<List<PoopEntry>>(
           stream: firestore.entriesStream(currentBaby.id),
@@ -349,6 +364,8 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
                       label: Text('Open ${currentBaby.name}\'s diary'),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  DeleteDiaryButton(baby: currentBaby),
                 ],
               ),
             );

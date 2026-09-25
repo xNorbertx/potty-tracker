@@ -43,11 +43,8 @@ void main() {
 
   group('FirestoreService - babies', () {
     test('addBaby creates a baby document with share code', () async {
-      final baby = await service.addBaby(
-        'user1',
-        'Alice',
-        caregiverLabel: 'parent@example.com',
-      );
+      final baby = await service.addBaby('user1', 'Alice',
+          caregiverLabel: 'parent@example.com', consentGiven: true);
       expect(baby.name, 'Alice');
       expect(baby.id, isNotEmpty);
       expect(baby.ownerUid, 'user1');
@@ -59,7 +56,7 @@ void main() {
     });
 
     test('babiesStream emits added baby', () async {
-      await service.addBaby('user1', 'Bob');
+      await service.addBaby('user1', 'Bob', consentGiven: true);
 
       final babies = await service.babiesStream('user1').first;
       expect(babies.length, 1);
@@ -67,8 +64,8 @@ void main() {
     });
 
     test('babies are isolated by user (memberUids)', () async {
-      await service.addBaby('user1', 'Alice');
-      await service.addBaby('user2', 'Other');
+      await service.addBaby('user1', 'Alice', consentGiven: true);
+      await service.addBaby('user2', 'Other', consentGiven: true);
 
       final user1Babies = await service.babiesStream('user1').first;
       final user2Babies = await service.babiesStream('user2').first;
@@ -80,7 +77,8 @@ void main() {
     });
 
     test('joinBabyWithCode adds user to memberUids', () async {
-      final baby = await service.addBaby('user1', 'Charlie');
+      final baby =
+          await service.addBaby('user1', 'Charlie', consentGiven: true);
       await issueInvite(baby);
       final joined = await service.joinBabyWithCode(
         'user2',
@@ -116,7 +114,8 @@ void main() {
 
     test('joinBabyWithCode ignores casing and surrounding whitespace',
         () async {
-      final baby = await service.addBaby('user1', 'Charlie');
+      final baby =
+          await service.addBaby('user1', 'Charlie', consentGiven: true);
       await issueInvite(baby);
 
       final joined = await service.joinBabyWithCode(
@@ -134,13 +133,13 @@ void main() {
     });
 
     test('legacy codes cannot grant new access', () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       expect(await service.joinBabyWithCode('user2', baby.shareCode), isNull);
     });
 
     test('updateBabyName updates only the requested baby', () async {
-      final first = await service.addBaby('user1', 'Alice');
-      final second = await service.addBaby('user1', 'Bea');
+      final first = await service.addBaby('user1', 'Alice', consentGiven: true);
+      final second = await service.addBaby('user1', 'Bea', consentGiven: true);
 
       await service.updateBabyName(first.id, 'Alicia');
       final babies = await service.babiesStream('user1').first;
@@ -151,7 +150,8 @@ void main() {
 
     test('leaveBaby removes only the current caregiver from a shared baby',
         () async {
-      final baby = await service.addBaby('parent-1', 'Alice');
+      final baby =
+          await service.addBaby('parent-1', 'Alice', consentGiven: true);
       await issueInvite(baby);
       final sharedBaby =
           await service.joinBabyWithCode('parent-2', baby.shareCode);
@@ -162,46 +162,11 @@ void main() {
       expect(saved.data()?['memberUids'], ['parent-1']);
       expect(saved.data()?['memberLabels'], isNot(contains('parent-2')));
     });
-
-    test('deleteBaby removes its poop logs and share code', () async {
-      final baby = await service.addBaby('parent-1', 'Alice');
-      final entry = await service.addEntry(
-        uid: 'parent-1',
-        babyId: baby.id,
-        timestamp: DateTime(2024, 6, 15, 10),
-        consistency: Consistency.soft,
-      );
-
-      await service.deleteBaby(baby);
-
-      expect(
-        (await fakeFirestore.collection('babies').doc(baby.id).get()).exists,
-        isFalse,
-      );
-      expect(
-        (await fakeFirestore
-                .collection('babies')
-                .doc(baby.id)
-                .collection('entries')
-                .doc(entry.id)
-                .get())
-            .exists,
-        isFalse,
-      );
-      expect(
-        (await fakeFirestore
-                .collection('share_codes')
-                .doc(baby.shareCode)
-                .get())
-            .exists,
-        isFalse,
-      );
-    });
   });
 
   group('FirestoreService - poop entries', () {
     test('addEntry creates an entry', () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       final entry = await service.addEntry(
         uid: 'user1',
         babyId: baby.id,
@@ -215,7 +180,7 @@ void main() {
     });
 
     test('addEntry with notes saves notes', () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       final entry = await service.addEntry(
         uid: 'user1',
         babyId: baby.id,
@@ -228,7 +193,7 @@ void main() {
     });
 
     test('addEntry persists optional size, colour and logging user', () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       final entry = await service.addEntry(
         uid: 'user1',
         babyId: baby.id,
@@ -248,7 +213,7 @@ void main() {
     });
 
     test('entriesStream emits entries for baby', () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       await service.addEntry(
         uid: 'user1',
         babyId: baby.id,
@@ -262,7 +227,7 @@ void main() {
     });
 
     test('deleteEntry removes entry', () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       final entry = await service.addEntry(
         uid: 'user1',
         babyId: baby.id,
@@ -277,7 +242,7 @@ void main() {
 
     test('updateEntry changes editable fields and clears removed options',
         () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       final entry = await service.addEntry(
         uid: 'user1',
         babyId: baby.id,
@@ -312,7 +277,7 @@ void main() {
     });
 
     test('multiple entries are returned ordered by timestamp desc', () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       final t1 = DateTime(2024, 6, 15, 8, 0);
       final t2 = DateTime(2024, 6, 15, 12, 0);
       final t3 = DateTime(2024, 6, 15, 16, 0);
@@ -341,7 +306,7 @@ void main() {
     });
 
     test('legacy entry edits freeze the old day across reloads', () async {
-      final baby = await service.addBaby('user1', 'Alice');
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       final ref = fakeFirestore
           .collection('babies')
           .doc(baby.id)
@@ -364,9 +329,8 @@ void main() {
       expect(reloaded.timestamp, DateTime(2024, 6, 20));
     });
 
-    test('celebrations are shared, claimed once, and cleaned up with the baby',
-        () async {
-      final baby = await service.addBaby('user1', 'Alice');
+    test('celebrations are shared and claimed once', () async {
+      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
       final awards = [AchievementAward(7, DateTime(2024, 6, 7))];
       expect(
           await service.claimAchievementCelebrations(baby.id, 'user1', awards),
@@ -374,13 +338,6 @@ void main() {
       expect(
           await service.claimAchievementCelebrations(baby.id, 'user2', awards),
           isEmpty);
-      await service.deleteBaby(baby);
-      final remaining = await fakeFirestore
-          .collection('babies')
-          .doc(baby.id)
-          .collection('achievement_celebrations')
-          .get();
-      expect(remaining.docs, isEmpty);
     });
   });
 }

@@ -63,8 +63,11 @@ diary to test deletion. Use the final signed build intended for Play testing.
    caregiver and remove the deleted caregiver's identifying fields. Test a
    stale sign-in session too: a reauthentication failure must not delete data.
 7. Delete the last caregiver account: confirm the diary and nested data disappear.
-8. Test the agreed consent-withdrawal flow after its implementation is approved
-   and deployed; verify both caregivers' access and server cleanup.
+8. With two verified test caregivers, confirm that the non-owner can choose
+   Delete diary. Cancel once, then confirm Delete for everyone. Check that both
+   caregivers lose diary access, invitations stop working, nested records are
+   removed, and both accounts/other diaries remain. An unverified caregiver must
+   be directed to verification or support instead.
 
 Record build/version, device/Android version, date, pass/fail and any screenshots
 using fictional data. Resolve failures before completing the Play forms.

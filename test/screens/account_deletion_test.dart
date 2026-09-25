@@ -34,7 +34,7 @@ void main() {
     final service = FirestoreService(db: db);
     await service.saveCaregiverProfile(const CaregiverProfile(
         uid: 'parent', name: 'Sam', email: 'parent@example.com'));
-    final baby = await service.addBaby('parent', 'Ada');
+    final baby = await service.addBaby('parent', 'Ada', consentGiven: true);
     await service.addEntry(
       uid: 'parent',
       babyId: baby.id,

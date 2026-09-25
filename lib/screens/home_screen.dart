@@ -9,6 +9,7 @@ import '../services/firestore_service.dart';
 import '../widgets/calendar_widget.dart';
 import '../widgets/poop_entry_tile.dart';
 import '../widgets/app_status.dart';
+import '../widgets/diary_consent.dart';
 import '../widgets/diary_title.dart';
 import 'log_poop_screen.dart';
 import 'profile_setup_screen.dart';
@@ -115,6 +116,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 _cachedBabyId = null;
               }),
             );
+            if (!baby.hasDiaryConsent) {
+              return Scaffold(
+                appBar: AppBar(
+                    automaticallyImplyLeading: false,
+                    centerTitle: true,
+                    title: diaryTitle),
+                body: DiaryConsentPanel(key: ValueKey(baby.id), baby: baby),
+                bottomNavigationBar: SafeArea(
+                    child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                        onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => BabySettingsScreen(
+                                    babies: babies, selectedBabyId: baby.id))),
+                        child: const Text('Your babies')),
+                    TextButton(
+                        onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    AccountSettingsScreen(babies: babies))),
+                        child: const Text('Account settings')),
+                  ],
+                )),
+              );
+            }
             final entriesStream = _getEntriesStream(firestore, baby.id);
 
             return StreamBuilder<List<PoopEntry>>(
@@ -372,59 +402,9 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
   bool _addingBaby = false;
 
   Future<void> _showAddBabyDialog() async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Add a baby'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: controller,
-            autofocus: true,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: "Baby's name"),
-            validator: (value) => value == null || value.trim().isEmpty
-                ? 'Please enter a name'
-                : null,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              setState(() => _addingBaby = true);
-              try {
-                await widget.firestore.addBaby(
-                  widget.uid,
-                  controller.text.trim(),
-                  caregiverLabel: widget.auth.currentUserEmail,
-                );
-                if (!mounted) return;
-                Navigator.of(context, rootNavigator: true).pop();
-              } catch (error) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(friendlyError(error)),
-                    backgroundColor: Colors.red.shade400,
-                  ),
-                );
-              } finally {
-                if (mounted) setState(() => _addingBaby = false);
-              }
-            },
-            child: const Text('Add baby'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
+    setState(() => _addingBaby = true);
+    await showAddBabyDialog(context);
+    if (mounted) setState(() => _addingBaby = false);
   }
 
   Future<void> _showJoinBabyDialog() async {

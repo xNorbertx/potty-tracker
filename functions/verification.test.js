@@ -107,7 +107,7 @@ test('in-flight verification and invitations cannot recreate deleted account dat
 
 test('only members with app email proof can issue invites; legacy code is replaced', async () => {
   const f = fixture();
-  f.records.set('babies/baby', { memberUids: ['parent'], shareCode: 'OLD123' });
+  f.records.set('babies/baby', { consentVersion: 1, memberUids: ['parent'], shareCode: 'OLD123' });
   f.records.set('share_codes/OLD123', { babyId: 'baby' });
   const create = createInvitationService(f);
   await assert.rejects(create('parent', 'baby'), /not-verified/);

@@ -9,6 +9,8 @@ import {
 import {
   collection,
   doc,
+  deleteDoc,
+  deleteField,
   getDoc,
   getDocs,
   query,
@@ -24,8 +26,64 @@ const babyId = 'baby-1';
 const originalCode = 'ABC123';
 let testEnv;
 
+test('new diaries require attributable server-timed consent; clients cannot forge deletion requests', async () => {
+  const db = testEnv.authenticatedContext('caregiver-a').firestore();
+  const ref = doc(db, 'babies', babyId);
+  const data = { ...baby, consentAt: serverTimestamp() };
+  const { consentVersion, consentBy, consentAt, ...legacy } = data;
+  await assertFails(setDoc(ref, legacy));
+  await assertFails(setDoc(ref, { ...data, consentBy: 'stranger' }));
+  await assertFails(setDoc(ref, { ...data, consentAt: new Date('2020-01-01') }));
+  await assertSucceeds(setDoc(ref, data));
+  await assertFails(deleteDoc(ref));
+  await assertFails(updateDoc(ref, { diaryDeletionRequested: true }));
+  await assertFails(updateDoc(ref, { consentVersion: 0 }));
+});
+
+test('legacy consent is confirmed once by its owner, or a member if the owner has left', async () => {
+  await seedDiary();
+  const owner = testEnv.authenticatedContext('caregiver-a').firestore();
+  const member = testEnv.authenticatedContext('caregiver-b').firestore();
+  const ref = doc(owner, 'babies', babyId);
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'babies', babyId), {
+      consentVersion: deleteField(), consentBy: deleteField(), consentAt: deleteField(),
+      memberUids: ['caregiver-a', 'caregiver-b'],
+    });
+  });
+  await assertFails(getDocs(collection(owner, 'babies', babyId, 'entries')));
+  await assertFails(updateDoc(doc(member, 'babies', babyId), { consentVersion: 1, consentBy: 'caregiver-b', consentAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(ref, { consentVersion: 1, consentBy: 'caregiver-a', consentAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { consentAt: serverTimestamp() }));
+  await assertSucceeds(getDocs(collection(owner, 'babies', babyId, 'entries')));
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'babies', babyId), {
+      consentVersion: deleteField(), consentBy: deleteField(), consentAt: deleteField(), ownerUid: 'departed',
+    });
+  });
+  await assertSucceeds(updateDoc(doc(member, 'babies', babyId), { consentVersion: 1, consentBy: 'caregiver-b', consentAt: serverTimestamp() }));
+});
+
+test('pending diary deletion blocks reads, changes, joining and new codes immediately', async () => {
+  await seedDiary();
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'babies', babyId), { diaryDeletionRequested: true });
+  });
+  const db = testEnv.authenticatedContext('caregiver-a').firestore();
+  await assertFails(getDocs(collection(db, 'babies', babyId, 'entries')));
+  await assertFails(getDocs(collection(db, 'babies', babyId, 'achievement_celebrations')));
+  await assertFails(updateDoc(doc(db, 'babies', babyId, 'entries', 'entry-1'), { notes: 'New' }));
+  await assertFails(updateDoc(doc(db, 'babies', babyId), { diaryDeletionRequested: false }));
+  await assertFails(updateDoc(doc(db, 'babies', babyId), { name: 'New' }));
+  await assertFails(setDoc(doc(db, 'share_codes', 'NEW123'), { babyId }));
+  await assertFails(joinBatch(testEnv.authenticatedContext('caregiver-b').firestore()).commit());
+});
+
 const baby = {
   name: 'Ada',
+  consentVersion: 1,
+  consentBy: 'caregiver-a',
+  consentAt: new Date('2026-01-01T00:00:00Z'),
   ownerUid: 'caregiver-a',
   memberUids: ['caregiver-a'],
   memberLabels: { 'caregiver-a': 'Ada parent' },
