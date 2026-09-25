@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
+import '../widgets/diary_consent.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -15,6 +16,7 @@ class _SetupScreenState extends State<SetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   bool _loading = false;
+  bool _consent = false;
 
   @override
   void dispose() {
@@ -23,7 +25,7 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_consent || !_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
 
     try {
@@ -34,6 +36,7 @@ class _SetupScreenState extends State<SetupScreen> {
         uid,
         _nameCtrl.text.trim(),
         caregiverLabel: auth.currentUserEmail,
+        consentGiven: _consent,
       );
       if (!mounted) return;
       Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
@@ -98,10 +101,15 @@ class _SetupScreenState extends State<SetupScreen> {
                         },
                       ),
                       const SizedBox(height: 24),
+                      DiaryConsentFields(
+                          value: _consent,
+                          onChanged: _loading
+                              ? null
+                              : (value) => setState(() => _consent = value)),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _loading ? null : _save,
+                          onPressed: _loading || !_consent ? null : _save,
                           child: _loading
                               ? const SizedBox(
                                   height: 20,

@@ -28,6 +28,12 @@ class VerificationService {
     await _client.httpsCallable('resendVerificationEmail').call<void>();
   }
 
+  Future<void> deleteDiary(String babyId) async {
+    await _client
+        .httpsCallable('deleteCaregiverDiary')
+        .call<void>({'babyId': babyId});
+  }
+
   Future<String> createInvitation(String babyId) async {
     final result = await _client
         .httpsCallable('createCaregiverInvitation')

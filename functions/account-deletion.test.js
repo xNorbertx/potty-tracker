@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const { initializeApp, deleteApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { createAccountDeletionService } = require('./account-deletion');
+const { createDiaryDeletionService, deleteRequestedDiary } = require('./diary-deletion');
+const { createInvitationService } = require('./invitations');
 
 const enabled = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 let app, db, remove;
@@ -19,12 +21,77 @@ afterEach(async () => {
 after(async () => { if (enabled) await deleteApp(app); });
 const integration = (name, run) => test(name, { skip: !enabled }, run);
 
+integration('diary deletion requires current app proof and current membership, not ownership or an SSO flag', async () => {
+  const ref = await diary('shared', ['gone', 'stays']);
+  const user = { email: 'stays@example.com', emailVerified: true };
+  const request = createDiaryDeletionService({ db, auth: { getUser: async () => user } });
+  await assert.rejects(request('stays', ref.id), /not-verified/);
+  await db.collection('verified_emails').doc('stays').set({ email: 'old@example.com' });
+  await assert.rejects(request('stays', ref.id), /not-verified/);
+  await db.collection('verified_emails').doc('stays').set({ email: user.email });
+  user.disabled = true;
+  await assert.rejects(request('stays', ref.id), /not-verified/);
+  user.disabled = false;
+  await db.collection('deletion_blocks').doc('stays').set({ blocked: true });
+  await assert.rejects(request('stays', ref.id), /not-verified/);
+  await db.collection('deletion_blocks').doc('stays').delete();
+  await db.collection('verified_emails').doc('stranger').set({ email: user.email });
+  await assert.rejects(request('stranger', ref.id), /not-member/);
+  await assert.rejects(request('stays', '../bad'), /invalid-baby/);
+  assert.equal((await ref.get()).data().diaryDeletionRequested, undefined);
+  await request('stays', ref.id); // Invited caregiver, not the owner.
+  const first = (await ref.get()).data();
+  assert.equal(first.diaryDeletionRequested, true);
+  assert.ok(first.deletionRequestedAt.toMillis());
+  await request('stays', ref.id);
+  assert.deepEqual((await ref.get()).data(), first);
+  await assert.rejects(createInvitationService({ db, auth: { getUser: async () => user } })('stays', ref.id), /not-member/);
+});
+
+integration('requested deletion removes every nested record and code but keeps accounts and other diaries', async () => {
+  const ref = await diary('delete', ['gone', 'stays']);
+  const other = await diary('keep', ['gone', 'stays']);
+  await db.collection('caregiver_profiles').doc('gone').set({ name: 'Test' });
+  await ref.update({ diaryDeletionRequested: true });
+  const writer = db.bulkWriter();
+  for (let i = 0; i < 510; i++) writer.set(ref.collection('entries').doc(`many-${i}`), { notes: 'Test' });
+  writer.set(ref.collection('future').doc('nested').collection('children').doc('one'), { test: true });
+  writer.set(db.collection('share_codes').doc('EXTRA1'), { babyId: ref.id });
+  await writer.close();
+  await deleteRequestedDiary(db, ref);
+  await deleteRequestedDiary(db, ref);
+  assert.equal((await ref.get()).exists, false);
+  for (const name of ['entries', 'achievement_celebrations', 'future']) {
+    assert.equal((await ref.collection(name).get()).size, 0);
+  }
+  assert.equal((await ref.collection('future').doc('nested').collection('children').get()).size, 0);
+  assert.equal((await db.collection('share_codes').where('babyId', '==', ref.id).get()).size, 0);
+  assert.equal((await other.get()).exists, true);
+  assert.equal((await db.collection('caregiver_profiles').doc('gone').get()).exists, true);
+});
+
+integration('cleanup ignores active diaries and resumes after interrupted recursive deletion', async () => {
+  const ref = await diary('retry', ['gone', 'stays']);
+  await deleteRequestedDiary(db, ref);
+  assert.equal((await ref.get()).exists, true);
+  await ref.update({ diaryDeletionRequested: true });
+  const failing = new Proxy(db, { get(target, key) {
+    if (key === 'recursiveDelete') return async () => { throw new Error('interrupted'); };
+    const value = Reflect.get(target, key);
+    return typeof value === 'function' ? value.bind(target) : value;
+  } });
+  await assert.rejects(deleteRequestedDiary(failing, ref), /interrupted/);
+  assert.equal((await ref.get()).data().diaryDeletionRequested, true);
+  await deleteRequestedDiary(db, ref);
+  assert.equal((await ref.get()).exists, false);
+});
+
 async function diary(id, members, owner = 'gone') {
   const ref = db.collection('babies').doc(id);
   await ref.set({ name: 'Ada', ownerUid: owner, memberUids: members,
     memberLabels: Object.fromEntries(members.map((uid) => [uid, uid])),
     memberEmails: Object.fromEntries(members.map((uid) => [uid, `${uid}@example.com`])),
-    shareCode: id });
+    shareCode: id, consentVersion: 1, consentBy: 'gone' });
   await db.collection('share_codes').doc(id).set({ babyId: id, issuedBy: 'gone', issuerEmail: 'gone@example.com' });
   await ref.collection('entries').doc('poop').set({ loggedBy: 'gone',
     loggedByName: 'Parent', loggedByEmail: 'gone@example.com', notes: 'After breakfast', consistency: 'soft' });
@@ -45,6 +112,8 @@ integration('preserves shared diaries, removes identity even in previously left 
     const baby = (await ref.get()).data();
     assert.deepEqual(baby.memberUids, ['stays']);
     assert.equal(baby.ownerUid, 'stays');
+    assert.equal(baby.consentBy, undefined);
+    assert.equal(baby.consentVersion, 1);
     assert.equal(baby.memberLabels.gone, undefined);
     assert.equal(baby.memberEmails.gone, undefined);
     assert.deepEqual((await ref.collection('entries').doc('poop').get()).data(),

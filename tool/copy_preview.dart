@@ -26,8 +26,9 @@ Future<void> main() async {
   final diary = FirestoreService(db: db);
   await diary.saveCaregiverProfile(const CaregiverProfile(
       uid: 'preview', name: 'Sam', email: 'sam@example.com'));
-  final baby = await diary.addBaby('preview', 'Ada');
-  await diary.addBaby('preview', 'Alexander Sebastian Montgomery');
+  final baby = await diary.addBaby('preview', 'Ada', consentGiven: true);
+  await diary.addBaby('preview', 'Alexander Sebastian Montgomery',
+      consentGiven: true);
   final now = DateTime.now();
   for (var daysAgo = 0; daysAgo < 14; daysAgo++) {
     await diary.addEntry(

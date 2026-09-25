@@ -21,9 +21,10 @@ void main() {
     final diary = FirestoreService(db: FakeFirebaseFirestore());
     await diary.saveCaregiverProfile(const CaregiverProfile(
         uid: 'caregiver', name: 'Sam', email: 'sam@example.com'));
-    final first = await diary.addBaby('caregiver', 'Ada');
-    final second =
-        await diary.addBaby('caregiver', 'Alexander Sebastian Montgomery');
+    final first = await diary.addBaby('caregiver', 'Ada', consentGiven: true);
+    final second = await diary.addBaby(
+        'caregiver', 'Alexander Sebastian Montgomery',
+        consentGiven: true);
     for (final baby in [first, second]) {
       await diary.addEntry(
           uid: 'caregiver',
@@ -81,7 +82,7 @@ void main() {
     final diary = FirestoreService(db: FakeFirebaseFirestore());
     await diary.saveCaregiverProfile(const CaregiverProfile(
         uid: 'caregiver', name: 'Sam', email: 'sam@example.com'));
-    await diary.addBaby('caregiver', 'Ada');
+    await diary.addBaby('caregiver', 'Ada', consentGiven: true);
     final navigator = GlobalKey<NavigatorState>();
     await tester.pumpWidget(MultiProvider(
       providers: [

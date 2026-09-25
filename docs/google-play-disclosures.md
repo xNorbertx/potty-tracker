@@ -86,10 +86,11 @@ an exemption. No organization or D-U-N-S details have been invented or submitted
 
 **Privacy/legal review before public Play launch:** confirm the lawful bases for
 account/support processing and the appropriate condition and explicit consent
-for a child's health data, including who can authorise it. The current app has no
-dedicated, recorded health-data consent flow. Do not claim that a privacy-policy
-link alone is explicit consent. Review the public policy and add the agreed legal
-bases/consent flow before launch. Also review applicable country requirements;
+for a child's health data, including who can authorise it. The app now has an affirmative, per-diary health-data consent flow with version,
+account ID and server time, including a one-time confirmation for existing diaries.
+It records a declaration, not verified guardianship. The Delete diary action is
+available to every current caregiver with app email proof; support remains
+available without that proof. Review the wording and legal bases before launch. Also review applicable country requirements;
 "all available countries" is the intended distribution, not completed clearance.
 
 **Retention review:** the operator approved 90 days after closure for support
@@ -129,9 +130,9 @@ dedicated synthetic account. Do not test deletion against a real family diary.
 ## Operator follow-up
 
 See `play-launch-next-steps.md` for the unsent Google support draft and weekend
-Android test checklist. Consent is approved for implementation; the exact shared-
-diary withdrawal/deletion behavior is paused for discussion at the operator’s
-request. No automatic shared-diary deletion on withdrawal is approved.
+Android test checklist. The operator approved deletion by any current caregiver
+with a verified email, with explicit confirmation that it removes the diary for
+everyone. See `diary-consent.md` for behavior and rollout checks.
 
 ## Sources
 

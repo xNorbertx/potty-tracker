@@ -53,7 +53,7 @@ void main() {
   for (final outcome in ['success', 'save failure', 'celebration failure']) {
     testWidgets('logging: $outcome', (tester) async {
       final service = ControlledFirestore();
-      final baby = await service.addBaby('user', 'Ada');
+      final baby = await service.addBaby('user', 'Ada', consentGiven: true);
       final today = DateTime.now();
       for (var i = 1; i <= 6; i++) {
         await service.addEntry(

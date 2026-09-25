@@ -78,6 +78,10 @@ function createAccountDeletionService({ db, now = Date.now }) {
       }
     }
 
+    // Keep consent version/date on shared diaries without the deleted identity.
+    await drain(db.collection('babies').where('consentBy', '==', uid),
+      (batch, ref) => batch.update(ref, { consentBy: FieldValue.delete() }));
+
     // Collection-group queries include diaries the caregiver left earlier.
     // Transactions avoid recreating a concurrently deleted entry or erasing a
     // new attribution after another caregiver edits it.
