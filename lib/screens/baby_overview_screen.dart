@@ -205,7 +205,9 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
           return Scaffold(
               appBar: AppBar(title: Text(currentBaby.name)),
               body: DiaryConsentPanel(
-                  key: ValueKey(currentBaby.id), baby: currentBaby));
+                  key: ValueKey(currentBaby.id),
+                  baby: currentBaby,
+                  footer: DeleteDiaryButton(baby: currentBaby)));
         }
         return StreamBuilder<List<PoopEntry>>(
           stream: firestore.entriesStream(currentBaby.id),

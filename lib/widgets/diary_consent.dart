@@ -133,7 +133,8 @@ class _AddBabyDialogState extends State<_AddBabyDialog> {
 
 class DiaryConsentPanel extends StatefulWidget {
   final Baby baby;
-  const DiaryConsentPanel({super.key, required this.baby});
+  final Widget? footer;
+  const DiaryConsentPanel({super.key, required this.baby, this.footer});
   @override
   State<DiaryConsentPanel> createState() => _DiaryConsentPanelState();
 }
@@ -183,10 +184,13 @@ class _DiaryConsentPanelState extends State<DiaryConsentPanel> {
       ] else if (!widget.baby.diaryDeletionRequested)
         const Text(
             'The caregiver who manages this diary needs to confirm permission before it can be used.'),
-      DeleteDiaryButton(baby: widget.baby),
       const DiarySupportLink(),
       if (_error != null)
         Text(_error!, style: const TextStyle(color: Colors.red)),
+      if (widget.footer != null) ...[
+        const SizedBox(height: 28),
+        widget.footer!,
+      ],
     ]);
   }
 }

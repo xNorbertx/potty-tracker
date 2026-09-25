@@ -9,7 +9,9 @@ not an ID or guardianship check. Version 1 text lives in `diary_consent.dart`.
 
 The baby record stores `consentVersion: 1`, `consentBy` (the signed-in UID), and
 `consentAt` (server time). Rules require these on creation and prevent clients
-from rewriting consent. Existing diaries require the current owner to confirm
+from rewriting consent. The UI waits for the server consent timestamp before
+opening entries, so optimistic local writes cannot start a premature read.
+Existing diaries require the current owner to confirm
 once. If the recorded owner has already left, a remaining member can confirm.
 Until then, entry/achievement reads, writes and invitations are blocked; account
 settings, leaving a shared diary, deletion and support remain available. The
@@ -22,6 +24,8 @@ email through the app's verification link. Ownership is not required. The app
 fetches current membership for the confirmation, which names the diary and the
 number of other caregivers. Cancel is a no-op. Verification failures offer
 resend/check status and support; support requests do not require app verification.
+Deletion is available only in the Danger zone on the baby detail page, including
+before consent; the baby list and calendar do not offer deletion.
 Delete for everyone is distinct from Leave diary and Delete account.
 
 ## Server enforcement and retries
