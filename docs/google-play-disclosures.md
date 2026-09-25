@@ -1,12 +1,12 @@
 # Google Play disclosure worksheet
 
-Prepared 24 September 2026. These are reviewable answers based on the repository,
+Updated 25 September 2026. These are reviewable answers based on the repository,
 not a submitted Play Console declaration or a guarantee of approval.
 
 ## Identity and links
 
 - App: **Potty Tracker**
-- Operator: **Norbert Bakker**, an individual
+- Operator: **Norbert Bakker**, an individual operating from **Sweden**
 - Contact: **support@potty-tracker.com**
 - Privacy: https://xnorbertx.github.io/potty-tracker/privacy/
 - Account/data deletion: https://xnorbertx.github.io/potty-tracker/delete-account/
@@ -79,8 +79,8 @@ recommend treatment or connect to a medical device. Confirm the appropriate
 record-keeping category with Play support if the form has no matching option.
 
 **Account-type gate:** Google's account-type guidance says developers providing
-health apps should choose an organization account. Norbert currently operates as
-an individual. Obtain clarification from Google on this app's classification
+health apps should choose an organization account. Norbert operates from Sweden as
+an individual and has created a **personal** developer account. Obtain clarification from Google on this app's classification
 before committing to a personal-account Play launch; a Parenting category is not
 an exemption. No organization or D-U-N-S details have been invented or submitted.
 
@@ -92,7 +92,10 @@ link alone is explicit consent. Review the public policy and add the agreed lega
 bases/consent flow before launch. Also review applicable country requirements;
 "all available countries" is the intended distribution, not completed clearance.
 
-**Retention review:** verify Firestore region, backups/PITR, Cloud Logging retention,
+**Retention review:** the operator approved 90 days after closure for support
+mail and 30 days for configurable technical logs. This is a policy decision, not
+evidence that provider settings have been changed. See `data-retention.md` for
+the operating procedure and provider exceptions. Verify Firestore region, backups/PITR, Cloud Logging retention,
 Firebase Auth security retention, Resend delivery retention and Zoho support-mail
 retention against the actual accounts. The public policy describes these without
 inventing exact deletion deadlines. Set and document an operational support-mail
@@ -122,6 +125,12 @@ runtime permission or advertising-ID permission appears in that manifest.
 Before Play submission, verify actual Google and Microsoft sign-in on a signed
 Android build, including Play signing fingerprints, and verify deletion with a
 dedicated synthetic account. Do not test deletion against a real family diary.
+
+## Operator follow-up
+
+See `play-launch-next-steps.md` for the unsent Google support draft and weekend
+Android test checklist. Consent is approved for implementation; the exact shared-
+diary withdrawal/deletion behavior is awaiting confirmation before rollout.
 
 ## Sources
 
