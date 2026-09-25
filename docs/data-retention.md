@@ -1,8 +1,12 @@
 # Retention operations
 
-Policy approved by Norbert Bakker on 25 September 2026. Provider account settings
-have **not yet been inspected or changed** as part of this record. Documented
-provider defaults are not evidence of this project's actual configuration.
+Policy approved by Norbert Bakker on 25 September 2026. Google Cloud Logging settings were inspected read-only in the authenticated
+console on 25 September 2026: `_Default` is 30 days, global, unlocked;
+`_Required` is 400 days, global, locked. Those are the only listed log buckets.
+The project Log Router lists only the corresponding `_Default` and `_Required`
+sinks, both enabled; no additional project export sink is listed. No changes
+were necessary. Other provider settings remain pending inspection. Documented
+provider defaults alone are not evidence of actual account configuration.
 
 ## Support mail: 90 days after closure
 
@@ -35,10 +39,10 @@ this process into operation; app deployment does not configure Zoho.
 
 | System | Agreed treatment / documented provider behavior | Account audit still needed |
 | --- | --- | --- |
-| Google Cloud Logging | Set configurable application log buckets to 30 days. Google's `_Default` bucket defaults to 30 days; `_Required` audit logs use a nonconfigurable 400 days. | List all buckets and sinks for `baby-poop-tracker`, actual retention, locks and exports. Check exported destinations separately. |
+| Google Cloud Logging | Set configurable application log buckets to 30 days. Google's `_Default` bucket defaults to 30 days; `_Required` audit logs use a nonconfigurable 400 days. | Verified: only global `_Default` (30 days, unlocked) and `_Required` (400 days, locked), and their two corresponding project sinks. Recheck after logging changes. |
 | Firebase Authentication | Google documents logged IP addresses retained for a few weeks; other authentication information is removed from live and backup systems within 180 days after customer-initiated user deletion. | Confirm services used and reflect this exception accurately; a 30-day application-log setting does not override it. |
 | Resend | Published Free/Pro/Scale retention is 30 days for email/log data while the account is active. | Confirm the actual plan/settings and any webhook/archive copies; do not send diary content in verification emails. |
-| Firestore | Live data follows diary/account deletion. Temporary deleted-user token blocks expire after two hours plus asynchronous TTL removal. | Record database region, PITR setting, backup schedules/retention and exports. Do not assume none exist from repository configuration. |
+| Firestore | Live data follows diary/account deletion. Temporary deleted-user token blocks expire after two hours plus asynchronous TTL removal. | Console confirms `(default)` uses `eur3` (Belgium and Netherlands), Google-managed encryption, scheduled backups disabled. PITR is disabled and the backup list is empty. Any manual exports or separately retained copies still need verification. |
 | Zoho Mail | Support mailbox follows the 90-day closure rule above. | Verify available retention controls, Trash behavior, backups and provider deletion terms. |
 | GitHub Pages | Hosts public assets/policies, not the Firestore diary database. | Record applicable hosting access/security-log terms; avoid a blanket 30-day promise about provider records. |
 

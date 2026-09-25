@@ -130,7 +130,8 @@ dedicated synthetic account. Do not test deletion against a real family diary.
 
 See `play-launch-next-steps.md` for the unsent Google support draft and weekend
 Android test checklist. Consent is approved for implementation; the exact shared-
-diary withdrawal/deletion behavior is awaiting confirmation before rollout.
+diary withdrawal/deletion behavior is paused for discussion at the operator’s
+request. No automatic shared-diary deletion on withdrawal is approved.
 
 ## Sources
 
