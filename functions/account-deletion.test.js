@@ -10,7 +10,7 @@ const enabled = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 let app, db, remove;
 before(() => {
   if (!enabled) return;
-  app = initializeApp({ projectId: 'demo-potty-tracker' }, 'deletion-tests');
+  app = initializeApp({ projectId: 'demo-deletion-tests' }, 'deletion-tests');
   db = getFirestore(app);
   remove = createAccountDeletionService({ db });
 });

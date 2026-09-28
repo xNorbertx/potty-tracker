@@ -37,7 +37,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             controller: controller,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: 'Name'),
+            maxLength: 120,
+            decoration:
+                const InputDecoration(labelText: 'Name', counterText: ''),
             validator: (value) => value == null || value.trim().isEmpty
                 ? 'Please enter your name'
                 : null,
@@ -91,88 +93,95 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
     await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Change password'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: currentPassword,
-                  obscureText: true,
-                  enabled: !submitting,
-                  decoration:
-                      const InputDecoration(labelText: 'Current password'),
-                  validator: (value) => value == null || value.isEmpty
-                      ? 'Enter your current password'
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: newPassword,
-                  obscureText: true,
-                  enabled: !submitting,
-                  decoration: const InputDecoration(labelText: 'New password'),
-                  validator: (value) => value == null || value.length < 6
-                      ? 'Use at least 6 characters'
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: confirmPassword,
-                  obscureText: true,
-                  enabled: !submitting,
-                  decoration:
-                      const InputDecoration(labelText: 'Confirm new password'),
-                  validator: (value) => value != newPassword.text
-                      ? 'Passwords do not match'
-                      : null,
-                ),
-              ],
+        builder: (context, setDialogState) => PopScope(
+          canPop: !submitting,
+          child: AlertDialog(
+            title: const Text('Change password'),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: currentPassword,
+                    obscureText: true,
+                    enabled: !submitting,
+                    decoration:
+                        const InputDecoration(labelText: 'Current password'),
+                    validator: (value) => value == null || value.isEmpty
+                        ? 'Enter your current password'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: newPassword,
+                    obscureText: true,
+                    enabled: !submitting,
+                    decoration:
+                        const InputDecoration(labelText: 'New password'),
+                    validator: (value) => value == null || value.length < 6
+                        ? 'Use at least 6 characters'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: confirmPassword,
+                    obscureText: true,
+                    enabled: !submitting,
+                    decoration: const InputDecoration(
+                        labelText: 'Confirm new password'),
+                    validator: (value) => value != newPassword.text
+                        ? 'Passwords do not match'
+                        : null,
+                  ),
+                ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed:
+                    submitting ? null : () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: submitting
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+                        setDialogState(() => submitting = true);
+                        try {
+                          await context.read<AuthService>().changePassword(
+                                currentPassword: currentPassword.text,
+                                newPassword: newPassword.text,
+                              );
+                          if (!mounted || !dialogContext.mounted) return;
+                          Navigator.pop(dialogContext);
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(content: Text('Password changed.')),
+                          );
+                        } catch (error) {
+                          if (!mounted || !dialogContext.mounted) return;
+                          setDialogState(() => submitting = false);
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            SnackBar(
+                              content: Text(friendlyError(error)),
+                              backgroundColor: Colors.red.shade400,
+                            ),
+                          );
+                        }
+                      },
+                child: submitting
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save password'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: submitting ? null : () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: submitting
-                  ? null
-                  : () async {
-                      if (!formKey.currentState!.validate()) return;
-                      setDialogState(() => submitting = true);
-                      try {
-                        await context.read<AuthService>().changePassword(
-                              currentPassword: currentPassword.text,
-                              newPassword: newPassword.text,
-                            );
-                        if (!mounted || !dialogContext.mounted) return;
-                        Navigator.pop(dialogContext);
-                        ScaffoldMessenger.of(this.context).showSnackBar(
-                          const SnackBar(content: Text('Password changed.')),
-                        );
-                      } catch (error) {
-                        setDialogState(() => submitting = false);
-                        ScaffoldMessenger.of(this.context).showSnackBar(
-                          SnackBar(
-                            content: Text(friendlyError(error)),
-                            backgroundColor: Colors.red.shade400,
-                          ),
-                        );
-                      }
-                    },
-              child: submitting
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save password'),
-            ),
-          ],
         ),
       ),
     );

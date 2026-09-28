@@ -17,6 +17,18 @@ void main() {
     createdAt: DateTime(2024, 1, 1),
   );
 
+  testWidgets('a future log is rejected before any write', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: LogPoopScreen(
+          baby: baby, initialDate: DateTime.now().add(const Duration(days: 1))),
+    ));
+    await tester.ensureVisible(find.text('Save'));
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    expect(find.text('Choose a time in the past.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('editing opens the log form with saved values', (tester) async {
     final entry = PoopEntry(
       id: 'entry-1',

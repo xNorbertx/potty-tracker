@@ -80,8 +80,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     controller: _nameController,
                     autofocus: true,
                     textCapitalization: TextCapitalization.words,
+                    maxLength: 120,
                     decoration: const InputDecoration(
-                      labelText: 'Your name',
+                      labelText: 'Your name', counterText: '',
                       prefixIcon: Icon(Icons.person_outline),
                     ),
                     validator: (value) => value == null || value.trim().isEmpty

@@ -105,6 +105,7 @@ class _BabyOverviewScreenState extends State<BabyOverviewScreen> {
               ),
             ),
             const SizedBox(height: 12),
+            const Text('One use. Expires within 7 days.'),
             TextButton.icon(
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: code));

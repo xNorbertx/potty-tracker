@@ -103,7 +103,8 @@ class _AddBabyDialogState extends State<_AddBabyDialog> {
                     controller: _name,
                     enabled: !_saving,
                     textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(labelText: "Baby's name"),
+                    maxLength: 120,
+                    decoration: const InputDecoration(labelText: "Baby's name", counterText: ''),
                     validator: (v) => v == null || v.trim().isEmpty
                         ? 'Please enter a name'
                         : null,

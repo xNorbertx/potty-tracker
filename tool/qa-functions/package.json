@@ -1,0 +1,1 @@
+{"name":"potty-tracker-local-qa","private":true,"main":"index.js","dependencies":{"firebase-functions":"7.4.0"},"engines":{"node":"22"}}

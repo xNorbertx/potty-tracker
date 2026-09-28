@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/app_status.dart';
 import '../widgets/diary_consent.dart';
+import '../widgets/join_diary_dialog.dart';
 import 'baby_overview_screen.dart';
 
 class BabySettingsScreen extends StatefulWidget {
@@ -68,7 +69,9 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
             controller: controller,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: "Baby's name"),
+            maxLength: 120,
+            decoration: const InputDecoration(
+                labelText: "Baby's name", counterText: ''),
             validator: (value) => value == null || value.trim().isEmpty
                 ? 'Please enter a name'
                 : null,
@@ -118,88 +121,20 @@ class _BabySettingsScreenState extends State<BabySettingsScreen> {
 
   Future<void> _addBaby() async {
     final baby = await showAddBabyDialog(context);
-    if (baby != null && mounted)
+    if (baby != null && mounted) {
       setState(
           () => _babies = [..._babies.where((b) => b.id != baby.id), baby]);
+    }
   }
 
   Future<void> _joinBaby() async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Join a shared baby'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: controller,
-            autofocus: true,
-            maxLength: 6,
-            textCapitalization: TextCapitalization.characters,
-            decoration: const InputDecoration(
-              labelText: 'Invite code',
-              hintText: 'ABC123',
-            ),
-            validator: (value) => value == null || value.trim().length != 6
-                ? 'Enter the 6-character invite code'
-                : null,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              final auth = context.read<AuthService>();
-              final uid = auth.currentUserId;
-              if (uid == null) return;
-              try {
-                final baby =
-                    await context.read<FirestoreService>().joinBabyWithCode(
-                          uid,
-                          controller.text,
-                          caregiverLabel: auth.currentUserEmail,
-                        );
-                if (!mounted) return;
-                if (baby == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                          'Invite code unavailable. Ask for a new one.'),
-                      backgroundColor: Colors.red.shade400,
-                    ),
-                  );
-                  return;
-                }
-                Navigator.of(context, rootNavigator: true).pop();
-                setState(() {
-                  if (_babies.every((existing) => existing.id != baby.id)) {
-                    _babies = [..._babies.where((b) => b.id != baby.id), baby];
-                  }
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('You joined ${baby.name}\'s diary.')),
-                );
-              } catch (error) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(friendlyError(error)),
-                    backgroundColor: Colors.red.shade400,
-                  ),
-                );
-              }
-            },
-            child: const Text('Join baby'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
+    final baby = await showJoinDiaryDialog(context);
+    if (baby != null && mounted) {
+      setState(
+          () => _babies = [..._babies.where((b) => b.id != baby.id), baby]);
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You joined ${baby.name}\'s diary.')));
+    }
   }
 
   Future<void> _leaveBaby(Baby baby) async {

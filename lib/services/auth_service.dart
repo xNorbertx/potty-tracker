@@ -69,8 +69,9 @@ class AuthService {
       'prompt': 'select_account',
       'tenant': 'common',
     });
-    // Both web and Android use popup/redirect via Firebase
-    return await _auth.signInWithPopup(microsoftProvider);
+    return kIsWeb
+        ? await _auth.signInWithPopup(microsoftProvider)
+        : await _auth.signInWithProvider(microsoftProvider);
   }
 
   Future<void> signOut() async {

@@ -10,6 +10,7 @@ import '../widgets/calendar_widget.dart';
 import '../widgets/poop_entry_tile.dart';
 import '../widgets/app_status.dart';
 import '../widgets/diary_consent.dart';
+import '../widgets/join_diary_dialog.dart';
 import '../widgets/diary_title.dart';
 import 'log_poop_screen.dart';
 import 'profile_setup_screen.dart';
@@ -408,70 +409,7 @@ class _NoBabiesHomeState extends State<_NoBabiesHome> {
   }
 
   Future<void> _showJoinBabyDialog() async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Join a shared baby'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: controller,
-            autofocus: true,
-            maxLength: 6,
-            textCapitalization: TextCapitalization.characters,
-            decoration: const InputDecoration(
-              labelText: 'Invite code',
-              hintText: 'ABC123',
-            ),
-            validator: (value) => value == null || value.trim().length != 6
-                ? 'Enter the 6-character invite code'
-                : null,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              try {
-                final baby = await widget.firestore.joinBabyWithCode(
-                  widget.uid,
-                  controller.text,
-                  caregiverLabel: widget.auth.currentUserEmail,
-                );
-                if (!mounted) return;
-                if (baby == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                          'Invite code unavailable. Ask for a new one.'),
-                      backgroundColor: Colors.red.shade400,
-                    ),
-                  );
-                  return;
-                }
-                Navigator.of(context, rootNavigator: true).pop();
-              } catch (error) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(friendlyError(error)),
-                    backgroundColor: Colors.red.shade400,
-                  ),
-                );
-              }
-            },
-            child: const Text('Join baby'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
+    await showJoinDiaryDialog(context);
   }
 
   Future<void> _signOut() async {

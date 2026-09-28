@@ -77,14 +77,15 @@ class _LoginScreenState extends State<LoginScreen> {
               child: const Text('Cancel')),
           ElevatedButton(
               onPressed: () {
-                if (formKey.currentState!.validate())
+                if (formKey.currentState!.validate()) {
                   Navigator.pop(dialogContext, true);
+                }
               },
               child: const Text('Send reset email')),
         ],
       ),
     );
-    if (result != true) {
+    if (result != true || !mounted) {
       controller.dispose();
       return;
     }

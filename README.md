@@ -133,28 +133,10 @@ need a real-phone smoke test. Failed Android builds do not block web deployment.
 
 ### Firestore security rules
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /babies/{babyId} {
-      allow read, update: if request.auth != null &&
-        request.auth.uid in resource.data.memberUids;
-      allow create: if request.auth != null;
-
-      match /entries/{entryId} {
-        allow read, write: if request.auth != null &&
-          request.auth.uid in get(/databases/$(database)/documents/babies/$(babyId)).data.memberUids;
-      }
-    }
-
-    match /share_codes/{code} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-    }
-  }
-}
-```
+Deploy the committed [firestore.rules](firestore.rules) and
+[firestore.indexes.json](firestore.indexes.json). Do not replace them with a
+simplified example: membership, consent, verification, deletion blocks, field
+validation and server-only invitations are enforced together.
 
 #### Automatic rule deployment
 

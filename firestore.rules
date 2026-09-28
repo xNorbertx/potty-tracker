@@ -10,10 +10,6 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/babies/$(babyId));
     }
 
-    function babyAfter(babyId) {
-      return getAfter(/databases/$(database)/documents/babies/$(babyId));
-    }
-
     function isBabyMember(babyId) {
       return isSignedIn() &&
         request.auth.uid in babyBefore(babyId).data.memberUids &&
@@ -43,22 +39,60 @@ service cloud.firestore {
         validConsent(request.resource.data);
     }
 
+    function validName(value) {
+      return value is string && value.size() > 0 && value.size() <= 120;
+    }
+
+    function optionalText(data, field, limit) {
+      return !(field in data) || (data[field] is string && data[field].size() <= limit);
+    }
+
+    function validOwnDetails(data) {
+      return data.memberLabels is map && data.get('memberEmails', {}) is map &&
+        optionalText(data.memberLabels, request.auth.uid, 120) &&
+        optionalText(data.get('memberEmails', {}), request.auth.uid, 320);
+    }
+
+    function validEntry(data) {
+      return data.keys().hasOnly(['babyId', 'timestamp', 'achievementDay',
+          'consistency', 'size', 'color', 'notes', 'loggedBy', 'loggedByName',
+          'loggedByEmail', 'createdAt']) &&
+        data.timestamp is timestamp && data.createdAt is timestamp &&
+        data.timestamp >= timestamp.date(2020, 1, 1) &&
+        data.timestamp <= request.time + duration.value(5, 'm') &&
+        data.consistency in ['hard', 'formed', 'pasty', 'soft', 'watery', 'unusual'] &&
+        (!('size' in data) || data.size in ['small', 'medium', 'large']) &&
+        (!('color' in data) || data.color in ['yellow', 'brown', 'green', 'orange',
+          'red', 'pale_white', 'black', 'mustard_yellow', 'darker_yellow',
+          'green_black', 'frothy_green', 'dark_green', 'green_brown', 'chalk_white']) &&
+        optionalText(data, 'notes', 10000) &&
+        optionalText(data, 'loggedByName', 120) &&
+        optionalText(data, 'loggedByEmail', 320) &&
+        (!('achievementDay' in data) || (data.achievementDay is string &&
+          data.achievementDay.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')));
+    }
+
     function isValidBabyCreate() {
       return request.resource.data.keys().hasOnly([
           'name', 'ownerUid', 'memberUids', 'memberLabels', 'memberEmails', 'shareCode', 'createdAt', 'consentVersion', 'consentBy', 'consentAt'
         ]) &&
         validConsent(request.resource.data) &&
+        validName(request.resource.data.name) &&
+        request.resource.data.createdAt is timestamp &&
+        validOwnDetails(request.resource.data) &&
+        request.resource.data.memberUids is list &&
         request.resource.data.ownerUid == request.auth.uid &&
         request.resource.data.memberUids.size() == 1 &&
         request.resource.data.memberUids[0] == request.auth.uid &&
         request.resource.data.memberLabels.keys().hasOnly([request.auth.uid]) &&
         request.resource.data.memberEmails.keys().hasOnly([request.auth.uid]) &&
         request.resource.data.shareCode is string &&
-        request.resource.data.shareCode.size() == 6;
+        request.resource.data.shareCode.size() == 0;
     }
 
-    function isRoutineBabyUpdate(babyId) {
+    function isRoutineBabyUpdate() {
       return isSignedIn() && request.auth.uid in resource.data.memberUids &&
+        validName(request.resource.data.name) && validOwnDetails(request.resource.data) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'memberLabels', 'memberEmails'
         ]) &&
@@ -75,62 +109,21 @@ service cloud.firestore {
         );
     }
 
-    function isLeavingBaby(babyId) {
+    function isLeavingBaby() {
       return isSignedIn() && request.auth.uid in resource.data.memberUids &&
         resource.data.memberUids.size() > 1 &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'memberUids', 'memberLabels', 'memberEmails'
         ]) &&
         request.resource.data.memberUids.size() == resource.data.memberUids.size() - 1 &&
-        request.resource.data.memberUids.hasOnly(resource.data.memberUids) &&
+        request.resource.data.memberUids.toSet() == resource.data.memberUids.toSet().difference([request.auth.uid].toSet()) &&
         !request.resource.data.memberUids.hasAny([request.auth.uid]) &&
+        !request.resource.data.memberLabels.keys().hasAny([request.auth.uid]) &&
         request.resource.data.memberLabels.diff(resource.data.memberLabels)
           .affectedKeys().hasOnly([request.auth.uid]) &&
-        (
-          !request.resource.data.keys().hasAny(['memberEmails']) ||
-          (resource.data.keys().hasAny(['memberEmails']) &&
-            request.resource.data.memberEmails.diff(resource.data.memberEmails)
-              .affectedKeys().hasOnly([request.auth.uid])
-          )
-        );
-    }
-
-    function isJoiningBaby(babyId) {
-      let before = babyBefore(babyId).data;
-      let after = babyAfter(babyId).data;
-      return isSignedIn() && hasConsent(before) &&
-        before.get('diaryDeletionRequested', false) == false &&
-        !(request.auth.uid in before.memberUids) &&
-        isVerifiedInvitation(before.shareCode, babyId, before.memberUids) &&
-        after.diff(before).affectedKeys().hasOnly([
-          'memberUids', 'memberLabels', 'memberEmails', 'shareCode'
-        ]) &&
-        after.memberUids.size() == before.memberUids.size() + 1 &&
-        after.memberUids.hasAll(before.memberUids) &&
-        after.memberUids.hasAny([request.auth.uid]) &&
-        after.memberLabels.diff(before.memberLabels)
-          .affectedKeys().hasOnly([request.auth.uid]) &&
-        (
-          (!before.keys().hasAny(['memberEmails']) &&
-            after.memberEmails.keys().hasOnly([request.auth.uid])) ||
-          (before.keys().hasAny(['memberEmails']) &&
-            after.memberEmails.diff(before.memberEmails)
-              .affectedKeys().hasOnly([request.auth.uid])
-          )
-        ) &&
-        after.shareCode is string &&
-        after.shareCode.size() == 6 &&
-        after.shareCode != before.shareCode &&
-        !existsAfter(/databases/$(database)/documents/share_codes/$(before.shareCode)) &&
-        existsAfter(/databases/$(database)/documents/share_codes/$(after.shareCode)) &&
-        getAfter(/databases/$(database)/documents/share_codes/$(after.shareCode)).data.babyId == babyId;
-    }
-
-    function isVerifiedInvitation(code, babyId, members) {
-      let invitation = get(/databases/$(database)/documents/share_codes/$(code)).data;
-      return invitation.keys().hasAll(['issuedBy', 'issuerEmail']) &&
-        invitation.babyId == babyId && invitation.issuedBy in members &&
-        get(/databases/$(database)/documents/verified_emails/$(invitation.issuedBy)).data.email == invitation.issuerEmail;
+        !request.resource.data.get('memberEmails', {}).keys().hasAny([request.auth.uid]) &&
+        request.resource.data.get('memberEmails', {}).diff(resource.data.get('memberEmails', {}))
+          .affectedKeys().hasOnly([request.auth.uid]);
     }
 
     // Only the server can record proof or attach an issuer to an invitation.
@@ -142,16 +135,16 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidBabyCreate();
       allow read: if isSignedIn() && request.auth.uid in resource.data.memberUids;
       allow update: if resource.data.get('diaryDeletionRequested', false) == false &&
-        (isConsentUpdate() || isRoutineBabyUpdate(babyId) || isLeavingBaby(babyId) || isJoiningBaby(babyId));
+        (isConsentUpdate() || isRoutineBabyUpdate() || isLeavingBaby());
       // Whole-diary deletion is server-only: verified membership, then retryable cleanup.
 
       match /entries/{entryId} {
         allow read: if canUseDiary(babyId);
         allow delete: if isBabyMember(babyId);
-        allow create: if canUseDiary(babyId) &&
+        allow create: if canUseDiary(babyId) && validEntry(request.resource.data) &&
           request.resource.data.babyId == babyId &&
           request.resource.data.loggedBy == request.auth.uid;
-        allow update: if canUseDiary(babyId) &&
+        allow update: if canUseDiary(babyId) && validEntry(request.resource.data) &&
           request.resource.data.babyId == resource.data.babyId &&
           request.resource.data.createdAt == resource.data.createdAt &&
           (!resource.data.keys().hasAny(['achievementDay']) ||
@@ -170,22 +163,17 @@ service cloud.firestore {
       }
     }
 
+    // Invitation lookup and consumption are server-only, with rate limits.
     match /share_codes/{code} {
-      allow get: if isSignedIn();
-      allow create: if isSignedIn() &&
-        request.resource.data.keys().hasOnly(['babyId']) &&
-        request.resource.data.babyId is string &&
-        request.auth.uid in babyAfter(request.resource.data.babyId).data.memberUids &&
-        hasConsent(babyAfter(request.resource.data.babyId).data) &&
-        babyAfter(request.resource.data.babyId).data.get('diaryDeletionRequested', false) == false;
-      allow delete: if isSignedIn() &&
-        (isJoiningBaby(resource.data.babyId) ||
-         (!existsAfter(/databases/$(database)/documents/babies/$(resource.data.babyId)) &&
-          isBabyMember(resource.data.babyId)));
+      allow read, write: if false;
     }
 
     match /caregiver_profiles/{uid} {
-      allow read, create, update: if isSignedIn() && request.auth.uid == uid;
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow create, update: if isSignedIn() && request.auth.uid == uid &&
+        request.resource.data.keys().hasOnly(['name', 'email']) &&
+        validName(request.resource.data.name) &&
+        request.resource.data.email is string && request.resource.data.email.size() <= 320;
     }
   }
 }

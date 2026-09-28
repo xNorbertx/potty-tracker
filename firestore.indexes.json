@@ -1,16 +1,59 @@
 {
   "indexes": [],
   "fieldOverrides": [
-    { "collectionGroup": "entries", "fieldPath": "loggedBy", "indexes": [
-      { "order": "ASCENDING", "queryScope": "COLLECTION" },
-      { "order": "DESCENDING", "queryScope": "COLLECTION" },
-      { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
-    ] },
-    { "collectionGroup": "achievement_celebrations", "fieldPath": "loggedBy", "indexes": [
-      { "order": "ASCENDING", "queryScope": "COLLECTION" },
-      { "order": "DESCENDING", "queryScope": "COLLECTION" },
-      { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
-    ] },
-    { "collectionGroup": "deletion_blocks", "fieldPath": "expiresAt", "ttl": true, "indexes": [] }
+    {
+      "collectionGroup": "entries",
+      "fieldPath": "loggedBy",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "achievement_celebrations",
+      "fieldPath": "loggedBy",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "deletion_blocks",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "share_codes",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "invitation_attempts",
+      "fieldPath": "resetAt",
+      "ttl": true,
+      "indexes": []
+    }
   ]
 }
