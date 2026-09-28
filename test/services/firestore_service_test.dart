@@ -5,7 +5,7 @@ import 'package:potty_tracker/models/poop_color.dart';
 import 'package:potty_tracker/models/poop_size.dart';
 import 'package:potty_tracker/services/firestore_service.dart';
 import 'package:potty_tracker/models/caregiver_profile.dart';
-import 'package:potty_tracker/models/baby.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:potty_tracker/models/achievement.dart';
 
 void main() {
@@ -16,14 +16,6 @@ void main() {
     fakeFirestore = FakeFirebaseFirestore();
     service = FirestoreService(db: fakeFirestore);
   });
-
-  // Server-issued fixture; production issuance is tested in functions/.
-  Future<void> issueInvite(Baby baby) =>
-      fakeFirestore.collection('share_codes').doc(baby.shareCode).set({
-        'babyId': baby.id,
-        'issuedBy': baby.ownerUid,
-        'issuerEmail': 'parent@example.com',
-      });
 
   group('FirestoreService - caregiver profiles', () {
     test('saves and reads a caregiver profile', () async {
@@ -42,15 +34,16 @@ void main() {
   });
 
   group('FirestoreService - babies', () {
-    test('addBaby creates a baby document with share code', () async {
+    test('addBaby creates a diary without an invitation', () async {
       final baby = await service.addBaby('user1', 'Alice',
           caregiverLabel: 'parent@example.com', consentGiven: true);
       expect(baby.name, 'Alice');
       expect(baby.id, isNotEmpty);
       expect(baby.ownerUid, 'user1');
       expect(baby.memberUids, contains('user1'));
-      expect(baby.shareCode, isNotEmpty);
-      expect(baby.shareCode.length, 6);
+      expect(baby.shareCode, isEmpty);
+      expect(
+          (await fakeFirestore.collection('share_codes').get()).docs, isEmpty);
       expect(baby.memberLabels, {'user1': 'Caregiver'});
       expect(baby.memberEmails, {'user1': 'parent@example.com'});
     });
@@ -76,65 +69,37 @@ void main() {
       expect(user2Babies.first.name, 'Other');
     });
 
-    test('joinBabyWithCode adds user to memberUids', () async {
-      final baby =
-          await service.addBaby('user1', 'Charlie', consentGiven: true);
-      await issueInvite(baby);
-      final joined = await service.joinBabyWithCode(
-        'user2',
-        baby.shareCode,
-        caregiverLabel: 'other@example.com',
-      );
-
-      expect(joined, isNotNull);
-      expect(joined!.memberUids, containsAll(['user1', 'user2']));
-      expect(joined.memberLabels['user2'], 'Caregiver');
-      expect(joined.memberEmails['user2'], 'other@example.com');
-      expect(joined.shareCode, isNot(baby.shareCode));
-      expect(
-        (await fakeFirestore
-                .collection('share_codes')
-                .doc(baby.shareCode)
-                .get())
-            .exists,
-        isFalse,
-      );
-      expect(
-        (await fakeFirestore
-                .collection('share_codes')
-                .doc(joined.shareCode)
-                .get())
-            .data()?['babyId'],
-        baby.id,
-      );
-
-      final secondUse = await service.joinBabyWithCode('user3', baby.shareCode);
-      expect(secondUse, isNull);
-    });
-
-    test('joinBabyWithCode ignores casing and surrounding whitespace',
+    test('joining uses the server result and normalizes the invitation',
         () async {
-      final baby =
-          await service.addBaby('user1', 'Charlie', consentGiven: true);
-      await issueInvite(baby);
-
-      final joined = await service.joinBabyWithCode(
-        'user2',
-        '  ${baby.shareCode.toLowerCase()}  ',
-      );
-
-      expect(joined?.id, baby.id);
-      expect(joined?.memberUids, contains('user2'));
+      final baby = await service.addBaby('user1', 'Ada', consentGiven: true);
+      String? submitted;
+      final client = FirestoreService(
+          db: fakeFirestore,
+          acceptInvitation: (code) async {
+            submitted = code;
+            return baby.id;
+          });
+      expect(
+          (await client.joinBabyWithCode('user2', '  abc234  '))?.id, baby.id);
+      expect(submitted, 'ABC234');
     });
 
-    test('joinBabyWithCode returns null for invalid code', () async {
-      final result = await service.joinBabyWithCode('user2', 'XXXXXX');
-      expect(result, isNull);
-    });
-
-    test('legacy codes cannot grant new access', () async {
-      final baby = await service.addBaby('user1', 'Alice', consentGiven: true);
-      expect(await service.joinBabyWithCode('user2', baby.shareCode), isNull);
+    test('invalid or expired invites return no diary; throttling is surfaced',
+        () async {
+      var calls = 0;
+      final client = FirestoreService(
+          db: fakeFirestore,
+          acceptInvitation: (_) async {
+            calls++;
+            throw FirebaseFunctionsException(
+                code: calls == 1 ? 'invalid-argument' : 'resource-exhausted',
+                message: 'Test failure');
+          });
+      expect(await client.joinBabyWithCode('user2', '../bad'), isNull);
+      expect(calls, 0);
+      expect(await client.joinBabyWithCode('user2', 'ABC234'), isNull);
+      await expectLater(client.joinBabyWithCode('user2', 'ABC234'),
+          throwsA(isA<FirebaseFunctionsException>()));
     });
 
     test('updateBabyName updates only the requested baby', () async {
@@ -152,9 +117,11 @@ void main() {
         () async {
       final baby =
           await service.addBaby('parent-1', 'Alice', consentGiven: true);
-      await issueInvite(baby);
-      final sharedBaby =
-          await service.joinBabyWithCode('parent-2', baby.shareCode);
+      await fakeFirestore.collection('babies').doc(baby.id).update({
+        'memberUids': ['parent-1', 'parent-2'],
+        'memberLabels.parent-2': 'Guest'
+      });
+      final sharedBaby = await service.getBaby(baby.id);
 
       await service.leaveBaby(baby: sharedBaby!, uid: 'parent-2');
 

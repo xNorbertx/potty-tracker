@@ -82,6 +82,7 @@ class _SetupScreenState extends State<SetupScreen> {
                       TextFormField(
                         controller: _nameCtrl,
                         textCapitalization: TextCapitalization.words,
+                        maxLength: 120,
                         decoration: const InputDecoration(
                           labelText: "Baby's name",
                           prefixIcon: Text(

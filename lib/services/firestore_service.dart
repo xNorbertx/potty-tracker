@@ -1,5 +1,5 @@
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
 import '../models/baby.dart';
 import '../models/caregiver_profile.dart';
@@ -12,20 +12,16 @@ import '../models/achievement.dart';
 class FirestoreService {
   final FirebaseFirestore _db;
   final Uuid _uuid;
+  final Future<String> Function(String code)? _acceptInvitation;
 
-  FirestoreService({FirebaseFirestore? db})
-      : _db = db ?? FirebaseFirestore.instance,
+  FirestoreService(
+      {FirebaseFirestore? db,
+      Future<String> Function(String code)? acceptInvitation})
+      : _acceptInvitation = acceptInvitation,
+        _db = db ?? FirebaseFirestore.instance,
         _uuid = const Uuid();
 
-  // ── Share code generation ─────────────────────────────────────────────────
-
-  String _generateShareCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars
-    final rng = Random.secure();
-    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
-  }
-
-  // ── Babies ────────────────────────────────────────────────────────────────
+  // ── Diaries and caregiver profiles ────────────────────────────────────────
 
   CollectionReference<Map<String, dynamic>> get _babiesRef =>
       _db.collection('babies');
@@ -78,7 +74,7 @@ class FirestoreService {
     }
     final caregiver = await _caregiverDetails(uid, caregiverLabel);
     final id = _uuid.v4();
-    final shareCode = _generateShareCode();
+    const shareCode = '';
     final baby = Baby(
       id: id,
       name: name,
@@ -95,7 +91,6 @@ class FirestoreService {
     final batch = _db.batch();
     batch.set(_babiesRef.doc(id),
         {...baby.toFirestore(), 'consentAt': FieldValue.serverTimestamp()});
-    batch.set(_db.collection('share_codes').doc(shareCode), {'babyId': id});
     await batch.commit();
     return baby;
   }
@@ -116,46 +111,21 @@ class FirestoreService {
     String code, {
     String? caregiverLabel,
   }) async {
-    final caregiver = await _caregiverDetails(uid, caregiverLabel);
-    final codeDoc = await _db
-        .collection('share_codes')
-        .doc(code.toUpperCase().trim())
-        .get();
-    if (!codeDoc.exists) return null;
-    // Legacy and automatically rotated placeholders have no verified issuer.
-    if (!codeDoc.data()!.containsKey('issuedBy')) return null;
-    final babyId = codeDoc.data()!['babyId'] as String;
-    final babyRef = _babiesRef.doc(babyId);
-
+    final normalized = code.trim().toUpperCase();
+    if (!RegExp(r'^[A-Z2-9]{6}$').hasMatch(normalized)) return null;
     try {
-      // A prospective caregiver cannot read a private diary before joining it.
-      // Use atomic field transforms instead; the rules validate the resulting
-      // membership and code rotation in the same batch.
-      final nextShareCode = _generateShareCode();
-      final batch = _db.batch();
-      batch.set(
-          babyRef,
-          {
-            'memberUids': FieldValue.arrayUnion([uid]),
-            'memberLabels': {
-              uid: caregiver.name,
-            },
-            'memberEmails': {uid: caregiver.email},
-            'shareCode': nextShareCode,
-          },
-          SetOptions(merge: true));
-      batch.delete(codeDoc.reference);
-      batch.set(
-        _db.collection('share_codes').doc(nextShareCode),
-        {'babyId': babyId},
-      );
-      await batch.commit();
-
-      final joinedBaby = await babyRef.get();
-      if (!joinedBaby.exists) return null;
-      return Baby.fromFirestore(joinedBaby);
-    } on FirebaseException catch (e) {
-      if (e.code == 'not-found' || e.code == 'permission-denied') return null;
+      final String babyId;
+      if (_acceptInvitation != null) {
+        babyId = await _acceptInvitation!(normalized);
+      } else {
+        final result = await FirebaseFunctions.instance
+            .httpsCallable('acceptCaregiverInvitation')
+            .call<Map<String, dynamic>>({'code': normalized});
+        babyId = result.data['babyId'] as String;
+      }
+      return getBaby(babyId);
+    } on FirebaseFunctionsException catch (error) {
+      if (error.code == 'invalid-argument') return null;
       rethrow;
     }
   }
@@ -182,8 +152,8 @@ class FirestoreService {
       return;
     }
     await _babiesRef.doc(baby.id).update({
-      'memberLabels': {...baby.memberLabels, uid: name},
-      'memberEmails': {...baby.memberEmails, uid: email},
+      FieldPath(['memberLabels', uid]): name,
+      FieldPath(['memberEmails', uid]): email,
     });
   }
 
@@ -194,13 +164,11 @@ class FirestoreService {
     if (otherMembers.isEmpty) {
       throw StateError('The last caregiver cannot leave this diary.');
     }
-    final updates = <String, dynamic>{
-      'memberUids': otherMembers,
-      'memberLabels.$uid': FieldValue.delete(),
+    final updates = <Object, Object?>{
+      'memberUids': FieldValue.arrayRemove([uid]),
+      FieldPath(['memberLabels', uid]): FieldValue.delete(),
+      FieldPath(['memberEmails', uid]): FieldValue.delete(),
     };
-    if (baby.memberEmails.containsKey(uid)) {
-      updates['memberEmails.$uid'] = FieldValue.delete();
-    }
     await _babiesRef.doc(baby.id).update(updates);
   }
 

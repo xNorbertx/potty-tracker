@@ -1,10 +1,12 @@
 const functions = require('firebase-functions/v1');
-const admin = require('firebase-admin');
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
 const { createVerificationService, verificationPage } = require('./verification');
-const { createInvitationService } = require('./invitations');
+const { createInvitationService, createAcceptInvitationService } = require('./invitations');
 const { createAccountDeletionService } = require('./account-deletion');
 
-admin.initializeApp();
+initializeApp();
 
 const sender = 'Potty Tracker <no_reply@potty-tracker.com>';
 const appUrl = 'https://xnorbertx.github.io/potty-tracker/#/home';
@@ -36,8 +38,8 @@ const welcomeEmailHtml = (link, welcome) => `
 </html>`;
 
 const verification = createVerificationService({
-  db: admin.firestore(),
-  auth: admin.auth(),
+  db: getFirestore(),
+  auth: getAuth(),
   endpoint: `https://us-central1-${process.env.GCLOUD_PROJECT || 'baby-poop-tracker'}.cloudfunctions.net/verifyCaregiverEmail`,
   sendEmail: async ({ to, subject, text, link, welcome }) => {
     const response = await fetch('https://api.resend.com/emails', {
@@ -102,7 +104,22 @@ exports.verifyCaregiverEmail = functions.https.onRequest(async (req, res) => {
   }
 });
 
-const createInvitation = createInvitationService({ db: admin.firestore(), auth: admin.auth() });
+const createInvitation = createInvitationService({ db: getFirestore(), auth: getAuth() });
+const acceptInvitation = createAcceptInvitationService({ db: getFirestore(), auth: getAuth() });
+exports.acceptCaregiverInvitation = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Sign in first.');
+  try {
+    return { babyId: await acceptInvitation(context.auth.uid, data?.code) };
+  } catch (error) {
+    if (error.message === 'too-many-attempts') {
+      throw new functions.https.HttpsError('resource-exhausted', 'Too many invitation attempts. Try again in 10 minutes.');
+    }
+    if (error.message === 'invalid-invitation' || error.code === 'auth/user-not-found') {
+      throw new functions.https.HttpsError('invalid-argument', 'This invitation is invalid or expired. Ask for a new code.');
+    }
+    throw new functions.https.HttpsError('unavailable', 'Could not join the diary. Please try again.');
+  }
+});
 exports.createCaregiverInvitation = functions.https.onCall(async (data, context) => {
   if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Sign in first.');
   try {
@@ -122,13 +139,13 @@ exports.createCaregiverInvitation = functions.https.onCall(async (data, context)
 });
 
 // Keep the existing deployed trigger name to avoid overlapping deletion workers.
-const deleteAccountData = createAccountDeletionService({ db: admin.firestore() });
+const deleteAccountData = createAccountDeletionService({ db: getFirestore() });
 exports.deleteEmailVerification = functions
   .runWith({ failurePolicy: true, timeoutSeconds: 540 })
   .auth.user().onDelete((user) => deleteAccountData(user.uid));
 
 const { createDiaryDeletionService, deleteRequestedDiary } = require('./diary-deletion');
-const requestDiaryDeletion = createDiaryDeletionService({ db: admin.firestore(), auth: admin.auth() });
+const requestDiaryDeletion = createDiaryDeletionService({ db: getFirestore(), auth: getAuth() });
 exports.deleteCaregiverDiary = functions.https.onCall(async (data, context) => {
   if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Sign in first.');
   try {
@@ -151,4 +168,4 @@ exports.deleteCaregiverDiary = functions.https.onCall(async (data, context) => {
 exports.finishDiaryDeletion = functions
   .runWith({ failurePolicy: true, timeoutSeconds: 540 })
   .firestore.document('babies/{babyId}')
-  .onUpdate((change) => deleteRequestedDiary(admin.firestore(), change.after.ref));
+  .onUpdate((change) => deleteRequestedDiary(getFirestore(), change.after.ref));

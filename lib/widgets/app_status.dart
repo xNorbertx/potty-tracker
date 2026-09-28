@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
 import '../services/connection_service.dart';
 
 String friendlyError(Object error) {
+  if (error is FirebaseFunctionsException &&
+      ['resource-exhausted', 'failed-precondition', 'invalid-argument']
+          .contains(error.code) &&
+      error.message != null) {
+    return error.message!;
+  }
   final raw = error.toString().toLowerCase();
   if (raw.contains('resource-exhausted')) {
     return 'Please wait one minute before requesting another email.';

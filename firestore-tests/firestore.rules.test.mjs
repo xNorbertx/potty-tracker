@@ -21,7 +21,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 
-const projectId = 'demo-potty-tracker';
+const projectId = 'demo-rules-tests';
 const babyId = 'baby-1';
 const originalCode = 'ABC123';
 let testEnv;
@@ -29,7 +29,7 @@ let testEnv;
 test('new diaries require attributable server-timed consent; clients cannot forge deletion requests', async () => {
   const db = testEnv.authenticatedContext('caregiver-a').firestore();
   const ref = doc(db, 'babies', babyId);
-  const data = { ...baby, consentAt: serverTimestamp() };
+  const data = { ...baby, shareCode: '', consentAt: serverTimestamp() };
   const { consentVersion, consentBy, consentAt, ...legacy } = data;
   await assertFails(setDoc(ref, legacy));
   await assertFails(setDoc(ref, { ...data, consentBy: 'stranger' }));
@@ -91,6 +91,70 @@ const baby = {
   shareCode: originalCode,
   createdAt: new Date('2026-01-01T00:00:00Z'),
 };
+
+test('leaving cannot remove a different caregiver using duplicate members', async () => {
+  await seedDiary();
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'babies', babyId), {
+      memberUids: ['caregiver-a', 'caregiver-b', 'caregiver-c'],
+    });
+  });
+  const db = testEnv.authenticatedContext('caregiver-a').firestore();
+  await assertFails(updateDoc(doc(db, 'babies', babyId), {
+    memberUids: ['caregiver-b', 'caregiver-b'],
+  }));
+});
+
+test('malformed entries and diary names cannot break another caregiver\'s app', async () => {
+  await seedDiary();
+  const db = testEnv.authenticatedContext('caregiver-a').firestore();
+  await assertFails(updateDoc(doc(db, 'babies', babyId), { name: { attack: true } }));
+  await assertFails(updateDoc(doc(db, 'babies', babyId, 'entries', 'entry-1'), { timestamp: 'not-a-date' }));
+  await assertFails(updateDoc(doc(db, 'babies', babyId, 'entries', 'entry-1'), { notes: 'x'.repeat(10001) }));
+});
+
+test('leaving removes only your membership and metadata, including legacy diaries', async () => {
+  for (const legacy of [false, true]) {
+    await seedDiary({ legacy });
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'babies', babyId), {
+        memberUids: ['caregiver-a', 'caregiver-b'],
+        'memberLabels.caregiver-b': 'Other parent',
+        ...(legacy ? {} : { 'memberEmails.caregiver-b': 'other@example.com' }),
+      });
+    });
+    const db = testEnv.authenticatedContext('caregiver-a').firestore();
+    const ref = doc(db, 'babies', babyId);
+    const leave = {
+      memberUids: ['caregiver-b'],
+      'memberLabels.caregiver-a': deleteField(),
+      'memberEmails.caregiver-a': deleteField(),
+    };
+    await assertFails(updateDoc(ref, { ...leave, 'memberLabels.caregiver-b': 'Forged' }));
+    if (!legacy) {
+      const { 'memberEmails.caregiver-a': omitted, ...withoutEmailPath } = leave;
+      await assertFails(updateDoc(ref, { ...withoutEmailPath, memberEmails: deleteField() }));
+    }
+    await assertSucceeds(updateDoc(ref, leave));
+    await assertFails(getDoc(ref));
+    await assertSucceeds(getDoc(doc(testEnv.authenticatedContext('caregiver-b').firestore(), 'babies', babyId)));
+  }
+});
+
+test('normal profile, diary and optional entry edits remain valid; invalid types and future dates fail', async () => {
+  await seedDiary();
+  const db = testEnv.authenticatedContext('caregiver-a').firestore();
+  await assertSucceeds(setDoc(doc(db, 'caregiver_profiles', 'caregiver-a'), { name: 'Sam', email: 'sam@example.com' }));
+  await assertSucceeds(updateDoc(doc(db, 'babies', babyId), { name: 'Ada Rose', 'memberLabels.caregiver-a': 'Sam' }));
+  const ref = doc(db, 'babies', babyId, 'entries', 'entry-1');
+  await assertSucceeds(updateDoc(ref, { size: 'large', color: 'brown', notes: '<script>literal</script>' }));
+  await assertSucceeds(updateDoc(ref, { size: deleteField(), color: deleteField(), notes: deleteField() }));
+  for (const invalid of [
+    { consistency: 'unknown' }, { size: 5 }, { color: {} }, { notes: null },
+    { timestamp: new Date(Date.now() + 86400000) }, { createdAt: 'bad' },
+    { loggedByName: 'x'.repeat(121) }, { unexpected: true },
+  ]) await assertFails(updateDoc(ref, invalid));
+});
 
 before(async () => {
   testEnv = await initializeTestEnvironment({
@@ -159,7 +223,7 @@ test('a caregiver cannot add another caregiver directly', async () => {
   );
 });
 
-test('a valid invite atomically joins a caregiver and rotates its code', async () => {
+test('clients cannot bypass server invitation checks with a valid code', async () => {
   await seedDiary();
   const db = testEnv.authenticatedContext('caregiver-b').firestore();
   const nextCode = 'DEF456';
@@ -180,10 +244,10 @@ test('a valid invite atomically joins a caregiver and rotates its code', async (
   batch.delete(doc(db, 'share_codes', originalCode));
   batch.set(doc(db, 'share_codes', nextCode), { babyId });
 
-  await assertSucceeds(batch.commit());
+  await assertFails(batch.commit());
 });
 
-test('a valid invite can add an email map to a legacy diary', async () => {
+test('legacy diaries cannot bypass server invitation checks', async () => {
   await seedDiary({ legacy: true });
   const db = testEnv.authenticatedContext('caregiver-b').firestore();
   const nextCode = 'DEF456';
@@ -201,7 +265,7 @@ test('a valid invite can add an email map to a legacy diary', async () => {
   batch.delete(doc(db, 'share_codes', originalCode));
   batch.set(doc(db, 'share_codes', nextCode), { babyId });
 
-  await assertSucceeds(batch.commit());
+  await assertFails(batch.commit());
 });
 
 test('an invite cannot be used without consuming and replacing its code', async () => {
@@ -275,24 +339,15 @@ test('mismatched proof and issuers who left the baby cannot authorize a join', a
   await assertFails(joinBatch(db).commit());
 });
 
-test('an unverified joiner can accept a valid invite but cannot reissue its replacement', async () => {
+test('invitation records cannot be read, listed, forged or consumed by clients', async () => {
   await seedDiary();
-  const db = testEnv.authenticatedContext('caregiver-b').firestore();
-  await assertSucceeds(joinBatch(db).commit());
-  await assertFails(updateDoc(doc(db, 'share_codes', 'DEF456'), {
-    issuedBy: 'caregiver-b', issuerEmail: 'other@example.com',
-  }));
-  const stranger = testEnv.authenticatedContext('stranger').firestore();
-  const batch = writeBatch(stranger);
-  batch.update(doc(stranger, 'babies', babyId), {
-    memberUids: ['caregiver-a', 'caregiver-b', 'stranger'],
-    memberLabels: { ...baby.memberLabels, 'caregiver-b': 'Other parent', stranger: 'Stranger' },
-    memberEmails: { ...baby.memberEmails, 'caregiver-b': 'other@example.com', stranger: 's@example.com' },
-    shareCode: 'GHI789',
-  });
-  batch.delete(doc(stranger, 'share_codes', 'DEF456'));
-  batch.set(doc(stranger, 'share_codes', 'GHI789'), { babyId });
-  await assertFails(batch.commit());
+  for (const uid of ['caregiver-a', 'stranger']) {
+    const db = testEnv.authenticatedContext(uid).firestore();
+    await assertFails(getDoc(doc(db, 'share_codes', originalCode)));
+    await assertFails(getDocs(collection(db, 'share_codes')));
+    await assertFails(deleteDoc(doc(db, 'share_codes', originalCode)));
+    await assertFails(setDoc(doc(db, 'invitation_attempts', uid), { count: 0 }));
+  }
 });
 
 test('achievement days survive edits; caregivers can create one celebration claim', async () => {

@@ -21,14 +21,24 @@ Legacy invite codes have no recorded sender and are no longer usable. Existing
 diary membership is preserved. A verified member opens Invite a caregiver to
 issue a fresh code bound to that caregiver. There is one active invitation per
 baby; reopening one's own invitation retains its code, while issuance by a
-different caregiver replaces it. Joining consumes the code. The automatically
-rotated placeholder cannot invite anyone until a verified member issues it.
-The Firestore rules also require the issuer still to be a member of the baby.
+different caregiver replaces it. Codes expire after seven days and joining consumes them. The authenticated
+`acceptCaregiverInvitation` callable performs the join; clients cannot read or
+write invitation records or add memberships directly. It checks the issuer's
+current Auth email, enabled status, verification proof and diary membership.
+Ten attempts per account per ten minutes limits guessing, including failed and
+malformed attempts. A retry after a lost success response returns the same diary
+for the same member. An existing member does not consume an invitation.
+Expired invitation and attempt records have Firestore TTL cleanup configured.
+
+Invitations without an expiry are replaced when a verified caregiver requests
+one. Existing diary access remains unchanged. Older app versions must refresh
+or update to join using the server callable; their direct database join fails
+closed.
 
 ## Deployment and verification
 
 The existing functions workflow deploys the welcome sender, resend callable,
-verification HTTPS endpoint, invitation callable, and deletion trigger. It uses
+verification HTTPS endpoint, invitation creation/acceptance callables, and deletion trigger. It uses
 the existing Resend secret. The runtime service account needs Firebase Auth
 user-read and Firestore data permissions; no client can write verification
 proofs or invitation issuer fields. Deploy both the functions and Firestore

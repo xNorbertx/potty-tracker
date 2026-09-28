@@ -41,12 +41,14 @@ function createAccountDeletionService({ db, now = Date.now }) {
       expiresAt: Timestamp.fromMillis(now() + 2 * 60 * 60 * 1000),
     });
     const privateData = db.batch();
-    for (const collection of ['caregiver_profiles', 'verification_requests', 'verified_emails']) {
+    for (const collection of ['caregiver_profiles', 'verification_requests', 'verified_emails', 'invitation_attempts']) {
       privateData.delete(db.collection(collection).doc(uid));
     }
     await privateData.commit();
 
     await drain(db.collection('share_codes').where('issuedBy', '==', uid),
+      (batch, ref) => batch.delete(ref));
+    await drain(db.collection('share_codes').where('consumedBy', '==', uid),
       (batch, ref) => batch.delete(ref));
 
     // Query live membership, not the possibly stale list on the settings screen.

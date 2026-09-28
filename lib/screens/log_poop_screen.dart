@@ -112,6 +112,12 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
   }
 
   Future<void> _save() async {
+    if (_loading || _saved) return;
+    if (_selectedDateTime.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Choose a time in the past.')));
+      return;
+    }
     if (_selectedConsistency == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Choose a consistency')),
@@ -290,8 +296,10 @@ class _LogPoopScreenState extends State<LogPoopScreen> {
             TextFormField(
               controller: _notesCtrl,
               maxLines: 3,
+              maxLength: 10000,
               decoration: const InputDecoration(
                 labelText: 'Notes (optional)',
+                counterText: '',
                 prefixIcon: Icon(Icons.notes),
                 alignLabelWithHint: true,
               ),
